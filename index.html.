@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gira Eventos — Sistema de Gestión</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --bg: #f0f8fd;
+    --surface: #ffffff;
+    --surface2: #f4fafd;
+    --surface3: #e6f4fb;
+    --border: #cce8f5;
+    --brand: #00b4d8;
+    --brand2: #0090b0;
+    --brand-dim: rgba(0,180,216,0.10);
+    --text: #0d1f2d;
+    --text2: #3a6070;
+    --text3: #7aaabb;
+    --red: #c0392b;
+    --green: #1a9e5c;
+    --blue: #0077a8;
+    --orange: #e07c2b;
+    --purple: #6c3acd;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+  /* HEADER */
+  header { display:flex; align-items:center; justify-content:space-between; padding:12px 28px; background:#fff; border-bottom:2px solid var(--brand); position:sticky; top:0; z-index:100; box-shadow:0 2px 12px rgba(0,180,216,0.10); }
+  .logo-wrap { display:flex; align-items:center; gap:10px; }
+  .logo-wrap img { height:38px; width:38px; object-fit:contain; }
+  .logo-name { font-family:'DM Serif Display',serif; font-size:20px; color:var(--brand); letter-spacing:.5px; }
+  .logo-sub { color:var(--text2); font-size:12px; margin-left:6px; font-weight:300; }
+
+  nav { display:flex; gap:6px; }
+  nav button { background:none; border:1px solid transparent; color:var(--text2); padding:8px 16px; border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; transition:all .2s; }
+  nav button:hover { color:var(--text); background:var(--surface2); }
+  nav button.active { color:var(--brand); border-color:var(--brand-dim); background:var(--brand-dim); }
+
+  /* SYNC BADGE */
+  .sync-badge { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text3); padding:6px 12px; background:var(--surface2); border-radius:20px; border:1px solid var(--border); }
+  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--text3); transition:background .3s; }
+  .sync-dot.ok { background:var(--green); }
+  .sync-dot.syncing { background:var(--orange); animation:pulse .8s infinite; }
+  .sync-dot.error { background:var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--text); color:#fff; padding:12px 20px; border-radius:10px; font-size:13px; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; max-width:320px; }
+  .toast.show { opacity:1; }
+  .toast.ok { background:#1a9e5c; }
+  .toast.err { background:#c0392b; }
+
+  /* LAYOUT */
+  main { padding:24px 28px; max-width:1440px; margin:0 auto; }
+  .section { display:none; }
+  .section.active { display:block; }
+
+  /* PAGE TITLE */
+  .page-title { font-family:'DM Serif Display',serif; font-size:26px; color:var(--brand); margin-bottom:4px; }
+  .page-sub { color:var(--text2); font-size:14px; margin-bottom:20px; }
+
+  /* STATS */
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .stat-card { background:#fff; border:1px solid var(--border); border-top:3px solid var(--brand); border-radius:12px; padding:16px 18px; }
+  .stat-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .stat-num { font-size:28px; font-weight:600; color:var(--text); }
+  .stat-num.c { color:var(--brand); }
+  .stat-num.g { color:var(--green); }
+  .stat-num.b { color:var(--blue); }
+
+  /* TOOLBAR */
+  .toolbar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+  .search-box { flex:1; min-width:200px; background:#fff; border:1px solid var(--border); border-radius:10px; padding:9px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none; transition:border-color .2s; }
+  .search-box:focus { border-color:var(--brand); }
+  .search-box::placeholder { color:var(--text3); }
+  select.filter-select { background:#fff; border:1px solid var(--border); border-radius:10px; padding:9px 12px; color:var(--text2); font-family:'DM Sans',sans-serif; font-size:14px; outline:none; cursor:pointer; }
+  select.filter-select:focus { border-color:var(--brand); }
+  select.filter-select option { background:#fff; }
+
+  /* BUTTONS */
+  .btn { padding:9px 16px; border-radius:10px; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; transition:all .2s; white-space:nowrap; }
+  .btn-brand { background:var(--brand); color:#fff; font-weight:600; }
+  .btn-brand:hover { background:var(--brand2); }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text2); }
+  .btn-outline:hover { border-color:var(--brand); color:var(--brand); }
+  .btn-sm { padding:5px 11px; font-size:12px; }
+  .btn-red { background:rgba(192,57,43,0.1); color:var(--red); border:1px solid rgba(192,57,43,0.25); }
+  .btn-red:hover { background:rgba(192,57,43,0.2); }
+  .btn-green { background:rgba(26,158,92,0.1); color:var(--green); border:1px solid rgba(26,158,92,0.25); }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; border-radius:12px; border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; }
+  thead th { background:var(--surface2); padding:11px 14px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text3); border-bottom:1px solid var(--border); white-space:nowrap; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+  tbody tr:hover { background:var(--surface2); }
+  tbody tr:last-child { border-bottom:none; }
+  td { padding:11px 14px; font-size:13px; vertical-align:middle; }
+  td.empresa-name { font-weight:600; color:var(--text); max-width:200px; }
+  td.contacto-name { color:var(--text2); }
+
+  /* BADGES */
+  .badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:.5px; }
+  .badge-alto { background:rgba(26,158,92,0.12); color:var(--green); }
+  .badge-medio { background:rgba(0,119,168,0.12); color:var(--blue); }
+  .badge-bajo { background:rgba(122,170,187,0.12); color:var(--text2); }
+  .badge-cliente { background:rgba(0,180,216,0.12); color:var(--brand); }
+  .badge-prospecto { background:rgba(0,0,0,0.04); color:var(--text3); border:1px solid var(--border); }
+
+  /* CONTACT */
+  .contact-btns { display:flex; gap:5px; }
+  .contact-btns a { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:7px; text-decoration:none; font-size:14px; transition:all .2s; }
+  .mail-btn { background:rgba(0,119,168,0.1); color:var(--blue); }
+  .mail-btn:hover { background:rgba(0,119,168,0.25); }
+  .wa-btn { background:rgba(26,158,92,0.1); color:var(--green); }
+  .wa-btn:hover { background:rgba(26,158,92,0.25); }
+  .no-email { color:var(--text3); font-size:12px; font-style:italic; }
+
+  /* PAGINATION */
+  .pagination { display:flex; align-items:center; justify-content:space-between; margin-top:14px; color:var(--text2); font-size:13px; }
+  .page-btns { display:flex; gap:5px; }
+  .page-btn { background:#fff; border:1px solid var(--border); color:var(--text2); width:30px; height:30px; border-radius:7px; cursor:pointer; font-size:13px; transition:all .2s; }
+  .page-btn:hover, .page-btn.active { border-color:var(--brand); color:var(--brand); }
+  .page-btn:disabled { opacity:.3; cursor:default; }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(13,31,45,0.5); z-index:200; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#fff; border:1px solid var(--border); border-radius:16px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; padding:26px; box-shadow:0 8px 40px rgba(0,180,216,0.12); }
+  .modal-title { font-family:'DM Serif Display',serif; font-size:22px; color:var(--brand); margin-bottom:18px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-full { grid-column:1/-1; }
+  .form-group { display:flex; flex-direction:column; gap:5px; }
+  .form-label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+  .form-input, .form-textarea, .form-select-input { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:9px 11px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none; transition:border-color .2s; width:100%; }
+  .form-input:focus, .form-textarea:focus, .form-select-input:focus { border-color:var(--brand); }
+  .form-textarea { resize:vertical; min-height:80px; }
+  .form-select-input { cursor:pointer; }
+  .form-select-input option { background:#fff; }
+  .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+
+  /* KANBAN */
+  .kanban-board { display:flex; gap:14px; overflow-x:auto; padding-bottom:20px; min-height:500px; }
+  .kanban-col { min-width:280px; flex-shrink:0; background:#fff; border:1px solid var(--border); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:8px; box-shadow:0 1px 6px rgba(0,180,216,0.06); }
+  .col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .col-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:6px; }
+  .col-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .col-count { background:var(--surface2); color:var(--text2); padding:2px 8px; border-radius:12px; font-size:11px; border:1px solid var(--border); }
+
+  .kanban-card { background:#fff; border:1px solid var(--border); border-left:3px solid var(--brand); border-radius:10px; padding:13px; cursor:pointer; transition:all .2s; position:relative; }
+  .kanban-card:hover { border-color:var(--brand); transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,180,216,0.12); }
+  .card-title-wrap { display:flex; align-items:flex-start; gap:4px; margin-bottom:5px; }
+  .card-title-input { font-size:14px; font-weight:600; color:var(--text); background:transparent; border:none; border-bottom:1px dashed transparent; outline:none; width:100%; font-family:'DM Sans',sans-serif; padding:0; cursor:text; transition:border-color .2s; }
+  .card-title-input:focus { border-bottom-color:var(--brand); }
+  .card-edit-icon { font-size:11px; color:var(--text3); opacity:0; transition:opacity .2s; flex-shrink:0; margin-top:2px; }
+  .kanban-card:hover .card-edit-icon { opacity:1; }
+  .card-empresa { font-size:12px; color:var(--brand); margin-bottom:6px; }
+  .card-fecha { font-size:11px; color:var(--text3); }
+  .card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .card-tags { display:flex; gap:4px; flex-wrap:wrap; }
+  .card-tag { font-size:10px; padding:2px 7px; border-radius:10px; background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
+
+  /* EVENT MODAL */
+  .event-modal { max-width:920px; }
+  .sheet-tabs-bar { display:flex; align-items:center; gap:0; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; }
+  .sheet-tab-btn { padding:8px 14px; border:none; background:none; color:var(--text2); font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; transition:all .2s; display:flex; align-items:center; gap:6px; }
+  .sheet-tab-btn:hover { color:var(--text); }
+  .sheet-tab-btn.active { color:var(--brand); border-bottom-color:var(--brand); font-weight:600; }
+  .sheet-tab-btn .tab-close { font-size:10px; color:var(--text3); opacity:0; transition:opacity .15s; padding:0 2px; }
+  .sheet-tab-btn:hover .tab-close { opacity:1; }
+  .add-sheet-btn { padding:8px 10px; border:none; background:none; color:var(--text3); font-size:16px; cursor:pointer; transition:color .2s; }
+  .add-sheet-btn:hover { color:var(--brand); }
+  .sheet-content { display:none; }
+  .sheet-content.active { display:block; }
+  .tab-rename-input { background:transparent; border:none; border-bottom:1px solid var(--brand); outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); padding:0 2px; }
+  .section-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; margin-top:14px; font-weight:600; }
+  .notas-area { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:13px; min-height:120px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none; width:100%; resize:vertical; line-height:1.6; }
+  .notas-area:focus { border-color:var(--brand); }
+
+  /* CHECKLIST */
+  .checklist-item { display:flex; align-items:center; gap:9px; padding:9px 11px; background:var(--surface2); border-radius:8px; margin-bottom:7px; border:1px solid var(--border); }
+  .checklist-item input[type="checkbox"] { width:15px; height:15px; cursor:pointer; accent-color:var(--brand); flex-shrink:0; }
+  .checklist-text { flex:1; font-size:13px; }
+  .checklist-text.done { text-decoration:line-through; color:var(--text3); }
+  .checklist-meta { font-size:11px; color:var(--text3); white-space:nowrap; }
+
+  /* CRONO */
+  .crono-table { width:100%; border-collapse:collapse; }
+  .crono-table th { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; padding:8px 11px; text-align:left; border-bottom:1px solid var(--border); font-weight:600; }
+  .crono-table td { padding:9px 11px; font-size:13px; border-bottom:1px solid rgba(204,232,245,0.5); }
+  .crono-table tr:last-child td { border-bottom:none; }
+
+  /* PROVEEDORES */
+  .proveedor-item { display:flex; align-items:center; gap:11px; padding:11px 13px; background:var(--surface2); border-radius:8px; margin-bottom:7px; border:1px solid var(--border); }
+  .prov-icon { width:34px; height:34px; background:var(--brand-dim); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .prov-info { flex:1; }
+  .prov-name { font-size:13px; font-weight:600; }
+  .prov-servicio { font-size:12px; color:var(--text2); }
+
+  /* ADD CARD */
+  .add-card-btn { width:100%; background:transparent; border:1px dashed var(--border); border-radius:10px; padding:11px; color:var(--text3); cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; transition:all .2s; margin-top:4px; }
+  .add-card-btn:hover { border-color:var(--brand); color:var(--brand); }
+
+  /* PROGRESS */
+  .progress-bar { height:4px; background:var(--surface3); border-radius:2px; margin-top:7px; }
+  .progress-fill { height:100%; background:var(--brand); border-radius:2px; transition:width .3s; }
+
+  /* SHARE */
+  .share-section-item { display:flex; align-items:center; gap:11px; padding:11px 13px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; margin-bottom:7px; cursor:pointer; transition:all .2s; }
+  .share-section-item:hover { border-color:var(--brand); }
+  .share-section-item.selected { border-color:var(--brand); background:var(--brand-dim); }
+  .share-section-item input[type=checkbox] { accent-color:var(--brand); width:15px; height:15px; flex-shrink:0; }
+  .share-section-label { flex:1; font-size:14px; font-weight:500; }
+  .share-section-desc { font-size:12px; color:var(--text2); }
+
+  /* INPUT ROW */
+  .input-row { display:flex; gap:7px; align-items:flex-end; }
+  .input-row .form-input { flex:1; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:var(--surface2); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--text3); }
+
+  @media(max-width:768px) {
+    header { padding:10px 14px; flex-wrap:wrap; gap:8px; }
+    main { padding:16px 12px; }
+    .stats-row { grid-template-columns:1fr 1fr; }
+    .form-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <img src="data:image/png;base64,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" alt="Gira Eventos">
+    <span class="logo-name">Gira Eventos</span>
+    <span class="logo-sub">Sistema de Gestión</span>
+  </div>
+  <nav>
+    <button class="active" onclick="showSection(event,'crm')">📋 CRM Empresas</button>
+    <button onclick="showSection(event,'eventos')">🎭 Eventos</button>
+    <button onclick="showSection(event,'tareas')">✅ Tareas</button>
+    <button onclick="showSection(event,'locaciones')">📍 Locaciones</button>
+  </nav>
+  <div class="sync-badge">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">Conectando...</span>
+  </div>
+</header>
+
+<main>
+  <!-- CRM -->
+  <section id="crm" class="section active">
+    <div class="page-title">Base de Datos — Empresas</div>
+    <div class="page-sub">Datos compartidos en tiempo real · Podés filtrar, buscar y contactar directamente</div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total registros</div><div class="stat-num c" id="stat-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Clientes activos</div><div class="stat-num g" id="stat-clientes">—</div></div>
+      <div class="stat-card"><div class="stat-label">Potencial ALTO</div><div class="stat-num c" id="stat-altos">—</div></div>
+      <div class="stat-card"><div class="stat-label">Mostrando</div><div class="stat-num b" id="stat-mostrando">—</div></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" class="search-box" placeholder="🔍  Buscar empresa, contacto o mail..." id="crm-search" oninput="applyFilters()">
+      <select class="filter-select" id="f-cliente" onchange="applyFilters()">
+        <option value="">Todos</option>
+        <option value="si">✅ Clientes</option>
+        <option value="no">🔲 Prospectos</option>
+      </select>
+      <select class="filter-select" id="f-potencial" onchange="applyFilters()">
+        <option value="">Potencial</option>
+        <option value="ALTO">🟢 Alto</option>
+        <option value="MEDIO">🔵 Medio</option>
+        <option value="BAJO">⚪ Bajo</option>
+      </select>
+      <select class="filter-select" id="f-area" onchange="applyFilters()">
+        <option value="">Área</option>
+        <option value="RRHH">RRHH</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Administración">Administración</option>
+        <option value="Comercial">Comercial</option>
+      </select>
+      <button class="btn btn-brand" onclick="openAddModal()">+ Agregar empresa</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Empresa</th><th>Contacto</th><th>Email</th><th>Teléfono</th>
+          <th>Estado</th><th>Potencial</th><th>Área</th><th>Notas</th>
+          <th>Contactar</th><th></th>
+        </tr></thead>
+        <tbody id="crm-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span id="page-info">—</span>
+      <div class="page-btns" id="page-btns"></div>
+    </div>
+  </section>
+
+  <!-- EVENTOS -->
+  <section id="eventos" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div>
+        <div class="page-title">Organización de Eventos</div>
+        <div class="page-sub">Gestioná cada evento en tiempo real con todo el equipo</div>
+      </div>
+      <button class="btn btn-brand" onclick="openNewEventModal()">+ Nuevo evento</button>
+    </div>
+    <div class="kanban-board" id="kanban-board"></div>
+  </section>
+
+  <!-- TAREAS PERSONALES -->
+  <section id="tareas" class="section">
+    <div class="page-title">Tareas del Equipo</div>
+    <div class="page-sub">Tareas internas de Ani y Cori — compartidas en tiempo real</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 1px 6px rgba(0,180,216,.06);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;">A</div>
+          <div><div style="font-size:15px;font-weight:600;">Ani</div><div style="font-size:12px;color:var(--text3);" id="ani-count">0 tareas</div></div>
+        </div>
+        <div id="ani-tasks"></div>
+        <div style="display:flex;gap:6px;margin-top:10px;">
+          <input type="text" class="form-input" id="ani-new-task" placeholder="Nueva tarea para Ani..." style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key===&apos;Enter&apos;)addPersonalTask(&apos;ani&apos;)">
+          <button class="btn btn-brand btn-sm" onclick="addPersonalTask(&apos;ani&apos;)">+ Agregar</button>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 1px 6px rgba(0,180,216,.06);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div style="width:38px;height:38px;border-radius:50%;background:#6c3acd;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;">C</div>
+          <div><div style="font-size:15px;font-weight:600;">Cori</div><div style="font-size:12px;color:var(--text3);" id="cori-count">0 tareas</div></div>
+        </div>
+        <div id="cori-tasks"></div>
+        <div style="display:flex;gap:6px;margin-top:10px;">
+          <input type="text" class="form-input" id="cori-new-task" placeholder="Nueva tarea para Cori..." style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key===&apos;Enter&apos;)addPersonalTask(&apos;cori&apos;)">
+          <button class="btn btn-brand btn-sm" onclick="addPersonalTask(&apos;cori&apos;)">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCACIONES -->
+  <section id="locaciones" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div><div class="page-title">Base de Locaciones</div><div class="page-sub">Spaces y venues · Vinculables a cada evento</div></div>
+      <button class="btn btn-brand" onclick="openAddLocModal()">+ Agregar locación</button>
+    </div>
+    <div class="toolbar">
+      <input type="text" class="search-box" placeholder="🔍  Buscar locación..." id="loc-search" oninput="renderLocaciones()">
+      <select class="filter-select" id="f-loc-tipo" onchange="renderLocaciones()">
+        <option value="">Todos los tipos</option>
+        <option>Hotel</option><option>Salón de eventos</option><option>Espacio al aire libre</option>
+        <option>Restaurante</option><option>Auditorio</option><option>Oficina / Cowork</option><option>Otro</option>
+      </select>
+      <select class="filter-select" id="f-loc-zona" onchange="renderLocaciones()">
+        <option value="">Toda la zona</option>
+        <option>CABA</option><option>GBA Norte</option><option>GBA Sur</option><option>GBA Oeste</option><option>Interior</option><option>Otra</option>
+      </select>
+    </div>
+    <div id="loc-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px;"></div>
+  </section>
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL: Empresa -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-title" id="add-modal-title">Nueva Empresa</div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label class="form-label">Empresa *</label><input type="text" class="form-input" id="f-empresa" placeholder="Nombre de la empresa"></div>
+      <div class="form-group"><label class="form-label">Contacto</label><input type="text" class="form-input" id="f-contacto" placeholder="Nombre y apellido"></div>
+      <div class="form-group"><label class="form-label">Área</label>
+        <select class="form-select-input" id="f-area-input">
+          <option value="">Sin especificar</option>
+          <option>RRHH</option><option>Marketing</option><option>Administración</option>
+          <option>Comercial</option><option>Asistente Gerencia</option><option>Prensa</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="f-email" placeholder="mail@empresa.com"></div>
+      <div class="form-group"><label class="form-label">Teléfono / WhatsApp</label><input type="text" class="form-input" id="f-telefono" placeholder="11 1234-5678"></div>
+      <div class="form-group"><label class="form-label">¿Es cliente?</label>
+        <select class="form-select-input" id="f-es-cliente">
+          <option value="false">🔲 Prospecto</option>
+          <option value="true">✅ Cliente</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Potencial</label>
+        <select class="form-select-input" id="f-potencial-input">
+          <option value="">Sin definir</option>
+          <option value="ALTO">🟢 Alto</option>
+          <option value="MEDIO">🔵 Medio</option>
+          <option value="BAJO">⚪ Bajo</option>
+        </select>
+      </div>
+      <div class="form-group form-full"><label class="form-label">Notas</label><textarea class="form-textarea" id="f-notas" placeholder="Observaciones, historial, próximos pasos..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('add-modal')">Cancelar</button>
+      <button class="btn btn-brand" onclick="saveCompany()" id="save-company-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo evento -->
+<div class="modal-overlay" id="new-event-modal">
+  <div class="modal">
+    <div class="modal-title">Nuevo Evento</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Tipo de evento *</label>
+        <select class="form-select-input" id="ne-tipo">
+          <option value="">Seleccioná...</option>
+          <option>🎉 FFAA</option><option>💼 Jornada</option><option>👨‍👩‍👧 Family Day</option>
+          <option>🎓 Seminario</option><option>🍽 Catering</option><option>🥂 Social</option>
+          <option>🏛 Congreso</option><option>🤝 Team Building</option><option>🚀 Lanzamiento</option>
+          <option>🎂 Aniversario</option><option>🏆 Premiación</option><option>🎪 Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Nombre / referencia</label><input type="text" class="form-input" id="ne-nombre" placeholder="Ej: BGH 2025"></div>
+      <div class="form-group"><label class="form-label">Empresa cliente</label><input type="text" class="form-input" id="ne-empresa" placeholder="Nombre de la empresa" list="empresas-list"><datalist id="empresas-list"></datalist></div>
+      <div class="form-group"><label class="form-label">Fecha del evento</label><input type="date" class="form-input" id="ne-fecha"></div>
+      <div class="form-group form-full"><label class="form-label">Estado inicial</label>
+        <select class="form-select-input" id="ne-estado">
+          <option value="consulta">📥 Consulta recibida</option>
+          <option value="presupuesto">💰 Presupuesto enviado</option>
+          <option value="confirmado">✅ Confirmado</option>
+          <option value="en-produccion">⚙️ En producción</option>
+          <option value="ejecutado">🎉 Ejecutado</option>
+        </select>
+      </div>
+      <div class="form-group form-full"><label class="form-label">Descripción</label><textarea class="form-textarea" id="ne-desc" placeholder="Detalles del evento..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('new-event-modal')">Cancelar</button>
+      <button class="btn btn-brand" onclick="saveNewEvent()">Crear evento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Detalle evento -->
+<div class="modal-overlay" id="event-detail-modal">
+  <div class="modal event-modal">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:10px;">
+      <div style="flex:1;">
+        <input type="text" id="ed-title" style="background:transparent;border:none;border-bottom:2px dashed transparent;outline:none;font-family:'DM Serif Display',serif;font-size:22px;color:var(--brand);width:100%;cursor:text;transition:border-color .2s;" onfocus="this.style.borderBottomColor='var(--brand)'" onblur="saveEventTitle()" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Nombre del evento">
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0;">
+        <button class="btn btn-outline btn-sm" onclick="openShareModal()">📤 Compartir</button>
+        <button class="btn btn-red btn-sm" onclick="deleteCurrentEvent()">🗑</button>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('event-detail-modal')">✕</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+      <input type="text" id="ed-empresa" style="color:var(--brand);font-size:13px;background:transparent;border:none;border-bottom:1px dashed transparent;outline:none;font-family:'DM Sans',sans-serif;cursor:text;transition:border-color .2s;" onfocus="this.style.borderBottomColor='var(--brand)'" onblur="autosaveEvent()" placeholder="🏢 Empresa...">
+      <input type="date" id="ed-fecha" style="color:var(--text3);font-size:12px;background:transparent;border:none;border-bottom:1px dashed transparent;outline:none;font-family:'DM Sans',sans-serif;cursor:text;transition:border-color .2s;" onfocus="this.style.borderBottomColor='var(--brand)'" onblur="autosaveEvent()">
+      <select class="filter-select" id="ed-estado-select" onchange="updateEventEstado()" style="margin-left:auto;font-size:12px;padding:5px 9px;">
+        <option value="consulta">📥 Consulta recibida</option>
+        <option value="presupuesto">💰 Presupuesto enviado</option>
+        <option value="confirmado">✅ Confirmado</option>
+        <option value="en-produccion">⚙️ En producción</option>
+        <option value="ejecutado">🎉 Ejecutado</option>
+      </select>
+    </div>
+    <div class="sheet-tabs-bar" id="sheet-tabs-bar"></div>
+    <div id="sheet-contents"></div>
+  </div>
+</div>
+
+<!-- MODAL: Compartir -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-title">📤 Compartir evento</div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:18px;">Seleccioná las secciones a incluir en el documento:</p>
+    <div id="share-sections-list"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('share-modal')">Cancelar</button>
+      <button class="btn btn-brand" onclick="generateShareDoc()">⬇ Generar documento</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL Locación -->
+<div class="modal-overlay" id="loc-modal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-title" id="loc-modal-title">Nueva Locación</div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label class="form-label">Nombre del lugar *</label><input type="text" class="form-input" id="loc-nombre" placeholder="Ej: Hotel Alvear"></div>
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-select-input" id="loc-tipo">
+          <option value="">Seleccioná...</option><option>Hotel</option><option>Salón de eventos</option>
+          <option>Espacio al aire libre</option><option>Restaurante</option><option>Auditorio</option><option>Oficina / Cowork</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Zona</label>
+        <select class="form-select-input" id="loc-zona">
+          <option value="">Seleccioná...</option><option>CABA</option><option>GBA Norte</option>
+          <option>GBA Sur</option><option>GBA Oeste</option><option>Interior</option><option>Otra</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Dirección</label><input type="text" class="form-input" id="loc-direccion" placeholder="Av. Alvear 1891, CABA"></div>
+      <div class="form-group"><label class="form-label">Capacidad (pax)</label><input type="number" class="form-input" id="loc-capacidad" placeholder="200"></div>
+      <div class="form-group"><label class="form-label">Contacto</label><input type="text" class="form-input" id="loc-contacto" placeholder="Nombre y cargo"></div>
+      <div class="form-group"><label class="form-label">Teléfono / WhatsApp</label><input type="text" class="form-input" id="loc-telefono" placeholder="11 1234-5678"></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="loc-email" placeholder="eventos@lugar.com"></div>
+      <div class="form-group form-full"><label class="form-label">Servicios incluidos</label><input type="text" class="form-input" id="loc-servicios" placeholder="Ej: Catering, estacionamiento, A/V, decoración..."></div>
+      <div class="form-group form-full"><label class="form-label">Notas</label><textarea class="form-textarea" id="loc-notas" placeholder="Precio referencia, historial de uso..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal(&apos;loc-modal&apos;)">Cancelar</button>
+      <button class="btn btn-brand" onclick="saveLocacion()">Guardar locación</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CONFIG SUPABASE
+// ═══════════════════════════════════════════
+const SB_URL = 'https://ktbdyzkbigoxnsyxnckq.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0YmR5emtiaWdveG5zeXhuY2txIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDE2NzcsImV4cCI6MjA5MDYxNzY3N30.8fwujUsCkZk9iCwBTa8VnAS2gC_yKB6lsIzUrGXxHbQ';
+
+async function sbFetch(path, opts={} ) {
+  const res = await fetch(SB_URL + '/rest/v1/' + path, {
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+// ═══════════════════════════════════════════
+//  SYNC STATUS
+// ═══════════════════════════════════════════
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = msg;
+}
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+const RAW_DATA = [{"empresa":"LABORATORIO MANTEL S.A. – MANLAB","contacto":"Marisela Scarpin","email":"marisela.scarpin@manlab.com.ar","telefono":"91167335448","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Laboratorios IMVI","contacto":"Maria Paz","email":"macuna@imvi.com.ar","telefono":"15 2282-7747","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"(ya estuvimos en contacto)","contacto":"Maira Vanina Rodriguez","email":"mrodriguez@temislostalo.com.ar","telefono":"1163724696","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"360 energy","contacto":"Camila Mazziotti","email":"camila.mazziotti@360energy.com.ar","telefono":"1140812256","esCliente":false,"notas":"fin de año 150 personas","potencial":"","area":""},{"empresa":"Abelia 7 Los Locos","contacto":"Pablo Padilla","email":"pablo@loslocos.com.ar","telefono":"46352094","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Academia Nacional de Ciencias","contacto":"Federico Sturzenegger","email":"fsturzenegger@udesa.edu.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"ACPYC","contacto":"Graciela salto","email":"licgraciela.salto@gmail.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Adecco","contacto":"Giselle","email":"","telefono":"","esCliente":true,"notas":"ex Nuskin","potencial":"ALTO","area":""},{"empresa":"Adeco Agro","contacto":"Lucila Vidal","email":"lvidal@adecoagro.com","telefono":"","esCliente":true,"notas":"fin de año","potencial":"ALTO","area":"RRHH"},{"empresa":"ADECO Agro","contacto":"Julieta Aizenberg","email":"jlopezeizenberg@adecoagro.com","telefono":"","esCliente":true,"notas":"fin de año","potencial":"ALTO","area":""},{"empresa":"ADECO Agro","contacto":"Julieta Lopez Eizenberg","email":"jlopezeizenberg@adecoagro.com / lpuracchio@adecoagro.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Alicorp","contacto":"Maria Jose Mendoza","email":"mmendoza@alicorp.com.ar","telefono":"","esCliente":false,"notas":"virtual , (creo qno trabaja mas en Alicorp)","potencial":"ALTO","area":""},{"empresa":"Anchor","contacto":"","email":"","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Adriana Costantini","contacto":"Jiimena","email":"jimena@adrianacostantini.com.ar","telefono":"","esCliente":false,"notas":"2017","potencial":"ALTO","area":"Asistente Gerencia"},{"empresa":"AES","contacto":"Fernana Ibarra","email":"fernanda.ibarra@aes.com","telefono":"","esCliente":true,"notas":"fin de año y otros","potencial":"ALTO","area":"Asistente Gerencia"},{"empresa":"AES","contacto":"Marisa Andrea Del Vecchio","email":"marisa.vecchio@aes.com","telefono":"","esCliente":true,"notas":"fin de años","potencial":"ALTO","area":"Asistente"},{"empresa":"Al Mundo / cvc)","contacto":"MarianaBalverdi","email":"mariana.balverdi@almundo.com","telefono":"","esCliente":true,"notas":"muchas veces consulto x virtual!","potencial":"ALTO","area":""},{"empresa":"Alejanandra Borgese","contacto":"Alejandra Borgese","email":"alejandra.borgese@angelbaraldo.com.ar","telefono":"1130699064","esCliente":false,"notas":"pidio FFA","potencial":"","area":""},{"empresa":"Alenco SAIC","contacto":"Gabirela Estevez","email":"gabriela.estevez@alencosaic.com","telefono":"49124141","esCliente":false,"notas":"x","potencial":"BAJO","area":""},{"empresa":"ANALISTA SR DE CULTURA, DESARROLLO Y COMUNICACIÓN","contacto":"Celeste Melián","email":"cmelian@cohen.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Arredo","contacto":"Leonardo Calzini","email":"lcalzini@arredo.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Andersen","contacto":"Maite Mollagaldeano","email":"maite.mollagaldeano@ar.andersen.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"ASMSA","contacto":"Mariano Costantino","email":"mcostantino@asmsa.com.ar","telefono":"","esCliente":false,"notas":"Fiesta fin de año","potencial":"ALTO","area":""},{"empresa":"Andersen","contacto":"Marisa Pena","email":"marisa.pena@ar.andersen.com","telefono":"","esCliente":true,"notas":"fin de año","potencial":"ALTO","area":""},{"empresa":"Antenucci & Compañia S.A","contacto":"Leonel Burrows","email":"leonel.burrows@antenucci.com.ar","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Apoc","contacto":"JACQUELINE BAUBLYS","email":"jacquie@apoc.org.ar","telefono":"(011) 5510-5097","esCliente":false,"notas":"pidio varias veces presupuesto","potencial":"ALTO","area":"Administración"},{"empresa":"APSEE","contacto":"","email":"organizacion@apsee.org.ar","telefono":"","esCliente":false,"notas":"1 FAMILY DAY","potencial":"MEDIO","area":""},{"empresa":"Ar Porv","contacto":"Yanina Moglia","email":"yanina.moglia@arpov.org.ar","telefono":"+54911 3415 0485","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"AREA 54 SA","contacto":"AGUSTIN LUNGARINI","email":"alungarini@area54sa.com.ar","telefono":"1144402877","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Arredo","contacto":"Fernanda Manuel","email":"fmanuel@arredo.com.ar","telefono":"","esCliente":false,"notas":"jornadas","potencial":"MEDIO","area":"RRHH"},{"empresa":"BGH","contacto":"Estefania Cancello","email":"estefania.cancello@bgh.com.ar","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":""},{"empresa":"BGH","contacto":"Joan Longo","email":"joan.longo@bgh.com.ar","telefono":"","esCliente":true,"notas":"prensa","potencial":"ALTO","area":"prensa"},{"empresa":"BGH TP","contacto":"Rochi Dominguez","email":"rochi.dominguez@bghtechpartner.com","telefono":"","esCliente":true,"notas":"varios (MKT)-exigente!","potencial":"ALTO","area":""},{"empresa":"BGH TP","contacto":"Maria Eugenia","email":"meugenia.martin@bghtechpartner.com","telefono":"","esCliente":true,"notas":"varios","potencial":"ALTO","area":""},{"empresa":"Artec Ingenieria","contacto":"Federico Cuello","email":"fc@artec-ingenieria.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Asociacion Escolar Goethe","contacto":"Karen Schere","email":"k.scherer@goethe.edu.ar","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Auto del Sol","contacto":"Maira Lopez","email":"mlopez@autodelsol.com","telefono":"1558175371","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Aw Latam","contacto":"Nicole Baredes","email":"","telefono":"(+5411) 5368 1009","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Ayres","contacto":"Mariela Fernandez","email":"mariela@ayres.com.ar","telefono":"1155814106","esCliente":false,"notas":"JORNADAS Y fiestas fin de año","potencial":"ALTO","area":"RRHH"},{"empresa":"Brouchou","contacto":"Flavia Ibarra","email":"Flavia.Ibarra@bruchou.com","telefono":"","esCliente":false,"notas":"fin de año","potencial":"ALTO","area":""},{"empresa":"Banco Bice","contacto":"David Dorgilia","email":"doriglia@bice.com.ar","telefono":"","esCliente":false,"notas":"Fiesta fin de ano 2000 pax. Licitacion","potencial":"ALTO","area":""},{"empresa":"Baterias Moura de Argentina","contacto":"Antonela","email":"antonela.porchetto@grupomoura.com","telefono":"5491170183585","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Bco Tierra del Fuego","contacto":"Giannina nigro","email":"","telefono":"1557652512","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"bdtglobal","contacto":"","email":"cforte@bdtglobal.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Berretta Godoy","contacto":"Silvia Kederian","email":"Kederian@berettagodoy.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Ciarec","contacto":"Luis Schirripa","email":"lschirripa@ciarec.com.ar","telefono":"","esCliente":true,"notas":"fiestas fin de año","potencial":"ALTO","area":"Asistente Gerencia"},{"empresa":"Bingo Pilar","contacto":"Romina Espinola","email":"","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"Biosidus","contacto":"Ines Garcia","email":"","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Blue Star Group","contacto":"Daiana Babolene","email":"daiana.babolene@bsg.global","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Conexus","contacto":"Georgina Fernández Amorós","email":"gamoros@conexus.com.ar","telefono":"52359765","esCliente":false,"notas":"??","potencial":"BAJO","area":"RRHH"},{"empresa":"Body Health","contacto":"Vanesa Perea","email":"vanesa.perea@bodyhealthgroup.com","telefono":"1159881320","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Credit Car","contacto":"Marcelo Tomatti","email":"marcelot@credit-car.com.ar","telefono":"","esCliente":true,"notas":"FFA","potencial":"ALTO","area":""},{"empresa":"Boston scientific","contacto":"Emiliano Strati","email":"stratie@bsci.com","telefono":"1168974944","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Braintly","contacto":"Antonella Bruno","email":"","telefono":"","esCliente":false,"notas":"nuevo","potencial":"ALTO","area":"RRHH"},{"empresa":"BSG Global","contacto":"Daiana Babolene","email":"daiana.babolene@bsg.global","telefono":"541159581982","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"ALTO","area":""},{"empresa":"BSG Global","contacto":"Valeria Puissegur","email":"valeria.puissegur@bsg.global","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"DASS","contacto":"Victoria Taboada","email":"vgonzaleztaboada@grupodass.com.ar","telefono":"","esCliente":false,"notas":"family Day","potencial":"ALTO","area":"RRHH"},{"empresa":"BULL MARKET BROKERS","contacto":"HILEM DOMINGUEZ","email":"HDOMINGUEZ@BULLMARKETBROKERS.COM","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Bullo Abogados","contacto":"Macarena Klimnda","email":"mklimunda@ebullo.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Deadalod","contacto":"Giuliana","email":"giuliana@dedalord.com","telefono":"","esCliente":true,"notas":"virtual","potencial":"ALTO","area":""},{"empresa":"CADIC","contacto":"Patricia Lechman","email":"plechman@grupocanale.com","telefono":"57899025","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Cale Group","contacto":"Melanie","email":"melaniealonso@calegroup.com.ar","telefono":"11 2752-6965","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"E-dreans","contacto":"","email":"","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Campo Limpio","contacto":"Ivan Diamint","email":"idiamint@campolimpio.org.ar","telefono":"","esCliente":true,"notas":"","potencial":"","area":""},{"empresa":"Capilatis","contacto":"Marisol Laucella","email":"","telefono":"4001-3750","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Carestino","contacto":"","email":"rrhh@carestino.com","telefono":"32219215","esCliente":false,"notas":"","potencial":"ALTO","area":""},{"empresa":"Eset","contacto":"Josefina Aurucio","email":"josefina.auruccio@eset.com","telefono":"","esCliente":true,"notas":"virtual","potencial":"ALTO","area":""},{"empresa":"Casin","contacto":"Catalina Lauria","email":"clauria@casinasoc.com.ar","telefono":"1128932633","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Casin","contacto":"Sonia Batista","email":"","telefono":"5278-9000","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Casin & Asociados","contacto":"Sol","email":"sjusto@casinasoc.com.ar","telefono":"1162515144","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Gestion Compartida","contacto":"Dziuba Andrea Victoria","email":"adziuba@gcgestion.com.ar","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":"Marketing"},{"empresa":"Gestion Compartida","contacto":"Morelli Cintia","email":"cimorelli@gcgestion.com.ar","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":"RRHH"},{"empresa":"Gestion Compartida","contacto":"Mendizabal Maria","email":"mmendizabal@gcgestion.com.ar","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":"RRHH"},{"empresa":"Gestion Compartida","contacto":"Cano Jesica Paol","email":"jcano@gcgestion.com.ar","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":"RRHH"},{"empresa":"CASTELLET LEGAL PARTNERS","contacto":"Micaela Setton","email":"micaela.setton@estudiocastellet.com","telefono":"21533749","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Centro Construcciones SA","contacto":"Maria Suarez","email":"msuarez@cecosa.com.ar","telefono":"1524413731","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Centro de Apoyo Nutricional S.R.L.","contacto":"Jimena Dupar","email":"jdupar@saludysoluciones.com","telefono":"","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"CFOTECH","contacto":"Mariana Petit","email":"mpetit@cfotechlatam.com","telefono":"","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"CHEIL","contacto":"","email":"","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Cielo Talent","contacto":"","email":"","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"CIMET OPTEL","contacto":"JAVIER OJEDA","email":"info@cimet.com","telefono":"54911 3486 3591","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"IFF","contacto":"","email":"","telefono":"","esCliente":true,"notas":"virtual","potencial":"ALTO","area":""},{"empresa":"Infomedia","contacto":"Melina Beszkin","email":"melinabeszkin@infomedia.consulting","telefono":"","esCliente":true,"notas":"virtual","potencial":"ALTO","area":""},{"empresa":"Cm Fitz Roy","contacto":"Oroz, Malena","email":"","telefono":"4778-5500","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Codigo In","contacto":"Maria Malizia","email":"rrhh@codigoin.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"coldview","contacto":"Daiana Scorzafave","email":"dscorzafave@coldview.com","telefono":"1156694972","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Coma S.A","contacto":"Victoria Mazzeo","email":"vmazzeo@comasa.com.ar","telefono":"1138599146","esCliente":false,"notas":"fin de año 70 pax","potencial":"","area":"RRHH"},{"empresa":"Compass Group","contacto":"Silvna Gallardo","email":"silvana.gallardo@compass-group.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Congo / La Tangente","contacto":"Celeste carpio","email":"produccion@latangente.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Correo Argentino","contacto":"Melaraña M.Natalia","email":"MMelarana@correoargentino.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Coto","contacto":"Iara Fernandez","email":"iara.fernandez@coto.com.ar","telefono":"11-54156289","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Kindad Carta","contacto":"","email":"","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"CTRL 365","contacto":"","email":"rrhh@ctrl365.com","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Cultura Democratica","contacto":"Martina Belen Zurita","email":"proyectos@cultdemocratica.org","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"D. Weinstock SRL","contacto":"LUIS ROTMAN","email":"luis@dw.com.ar","telefono":"1133972151","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Dafitti","contacto":"Isabella Chiappetta","email":"isabella.chiappetta@dafiti.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"LDC","contacto":"Josefina Renners","email":"Josefina.Rennes@LDC.com","telefono":"","esCliente":true,"notas":"virtual","potencial":"ALTO","area":""},{"empresa":"LDC","contacto":"Melisa Otero","email":"melissa.otero@ldc.com","telefono":"","esCliente":true,"notas":"virtual","potencial":"ALTO","area":""},{"empresa":"Datco","contacto":"Gimena Giorno","email":"Gimena.Giorno@datco.net","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"DCAR","contacto":"Gaitan Paula","email":"","telefono":"+54(11)5289-9010","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Mastellone","contacto":"De Momi Agustina","email":"MADEMOMI@mastellone.com.ar","telefono":"","esCliente":true,"notas":"virtual","potencial":"ALTO","area":""},{"empresa":"Desir Salud","contacto":"Victoria Cardani","email":"vcardani@desirsalud.com.ar","telefono":"11 5324-2324","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Dig Bang","contacto":"Cecilia Carjuzaa","email":"ccarjuzaa@digbang.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Mercado Libre","contacto":"Antonella Schiavoni","email":"antonella.schiavoni@mercadolibre.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Dig Bang","contacto":"Ligielena Hernandez","email":"","telefono":"","esCliente":false,"notas":"fiesta fin de año 50 pax","potencial":"BAJO","area":""},{"empresa":"Dirmod","contacto":"Macarena Barrojo","email":"macarena.barrojo@dirmod.com","telefono":"","esCliente":false,"notas":"fiesta para 35 personas","potencial":"BAJO","area":""},{"empresa":"Diseño Group","contacto":"Daniel rodrigo","email":"drodrigo@dgroupsa.com.ar","telefono":"11 5766-2625","esCliente":true,"notas":"capacitacion 100 pax Hit","potencial":"","area":""},{"empresa":"Diwait","contacto":"Lorena Ladner","email":"lorena@diwait.com","telefono":"+54 9343 536-0474","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Drofar","contacto":"Mayra Kobylanski","email":"rrhh@drofar.com.ar","telefono":"11 4063-4991","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Drogueria VIP","contacto":"Melina Zuñiga","email":"contable@drogueriavipsrl.com.ar","telefono":"1124719983","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Educacion IT","contacto":"Lic. Camila Pernas","email":"","telefono":"8102208148","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Nubiral","contacto":"Mariana Sahores","email":"mariana@nubiral.com","telefono":"","esCliente":true,"notas":"virtual ex BGH","potencial":"ALTO","area":""},{"empresa":"Electrolux","contacto":"Victoria Corrales","email":"victoria.corales@electrolux.com","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Emprende Didacticos","contacto":"Ana/ Lucia","email":"emprendedidacticos@gmail.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Endeva","contacto":"Julia Maldonado","email":"Julia.Maldonado@endava.com","telefono":"+54 9 341 666 8049","esCliente":true,"notas":"","potencial":"","area":""},{"empresa":"Enfoke","contacto":"Laura Bokenhans","email":"laurab@enfoke.com","telefono":"1165862750","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"ERA","contacto":"Juliana moreira","email":"emprendedoresradicales@gmail.com","telefono":"1157974855","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Papierttei","contacto":"David Mengoni","email":"dmengoni@papierttei.com","telefono":"","esCliente":false,"notas":"jornada","potencial":"MEDIO","area":""},{"empresa":"ERM","contacto":"","email":"","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Evergreen Shipping Agency Argentina S.A.","contacto":"Shadia","email":"sanfuso@evergreen-shipping.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Expeditors","contacto":"Milena Cardoso","email":"milena.cardoso@expeditors.com","telefono":"54-11 5450 2360","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Experian","contacto":"Gabriela Chornobroff","email":"gabriela.chornobroff@experian.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Famyc","contacto":"Daniela Araujo","email":"daraujo@famiq.com.ar","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Faurecia","contacto":"Salmero Analia","email":"analia.salmero@faurecia.com","telefono":"54 9 11 5769 2898","esCliente":false,"notas":"","potencial":"MEDIO","area":"Asistente"},{"empresa":"Filium S.A","contacto":"Maria Sol Pastor","email":"mspastor@filiumsalud.com.ar","telefono":"1168266619","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Puma","contacto":"Cesar Flores","email":"cesar.flores@puma.com","telefono":"","esCliente":true,"notas":"compras","potencial":"ALTO","area":""},{"empresa":"Puma","contacto":"Gabriela Fernandez","email":"gabriela.fernandez@puma.com","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":""},{"empresa":"Puma","contacto":"Victoria","email":"victoria.pranteda@puma.com","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":""},{"empresa":"Finaer","contacto":"Gabriela Leal","email":"gleal@finaersa.com.ar","telefono":"1132992609","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"FJA","contacto":"Teresita Gonzales","email":"Teresita.Gonzalez@fja.com.ar","telefono":"(54)-11-5273-8200","esCliente":false,"notas":"pidio temabuilding","potencial":"","area":""},{"empresa":"Fundacion","contacto":"","email":"","telefono":"","esCliente":false,"notas":"Mariana / Sebastian","potencial":"ALTO","area":""},{"empresa":"Fundación Itaú Argentina","contacto":"Alejandra Saldias","email":"Alejandra.Saldias@fundacionitau.org.ar","telefono":"+54 11 4378-8451","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Fusap","contacto":"Lucas Rodriguez","email":"lrodriguez@fusap.com.ar","telefono":"1159338205","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Gelin Group","contacto":"Luciana","email":"marketing@gelingroup.com.ar","telefono":"11 5662-7769","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Santander","contacto":"Nievas Agustin","email":"agnievas@santanderrio.com.ar","telefono":"43422120","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"Santander","contacto":"Rivas Gabriel","email":"gabrivas@santanderrio.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"Santander","contacto":"TERAN,MARIA DE LA PAZ","email":"materan@santanderrio.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"Santander","contacto":"Sales Maria Laura","email":"msales@santanderrio.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"Santander","contacto":"CENTURION,JUAN MARTIN","email":"jcenturion@santanderrio.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"GeoVictoria","contacto":"Indiana Sanz","email":"indianasanz@outlook.es","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Getronics","contacto":"Micaela Farizo","email":"micaela.farizo@getronics.com","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"SMS","contacto":"Cecilia Guevara","email":"cguevares@sms-sudamerica.com","telefono":"","esCliente":true,"notas":"fin de año","potencial":"ALTO","area":"RRHH"},{"empresa":"Stefanini","contacto":"Cristina Rubio","email":"crubio@stefanini.com","telefono":"","esCliente":true,"notas":"varios","potencial":"ALTO","area":"RRHH"},{"empresa":"Stefanini","contacto":"Celina","email":"cgregoric@stefanini.com","telefono":"","esCliente":true,"notas":"varios","potencial":"ALTO","area":""},{"empresa":"Stefanini","contacto":"Facundo Lanaro","email":"flanaro@stefanini.com","telefono":"","esCliente":true,"notas":"compras!!!!!","potencial":"ALTO","area":""},{"empresa":"Stefanini","contacto":"Melvin","email":"msperdomo@stefanini.com","telefono":"","esCliente":true,"notas":"compras!!!!!","potencial":"ALTO","area":""},{"empresa":"Stefanini","contacto":"Estefania LaTorre","email":"etorre@stefanini.com","telefono":"","esCliente":false,"notas":"varios","potencial":"ALTO","area":""},{"empresa":"Getronics","contacto":"Micaela Farizo","email":"micaela.farizo@Getronics.com","telefono":"5491163241494","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Gigared","contacto":"Mariana Alderete","email":"malderete@gigared.com.ar","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Givaudan Argentina","contacto":"Guillermo Ciapanna","email":"guillermo.ciapanna@givaudan.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"GLAM Distribuidores","contacto":"Melisa Nuñez","email":"mnunez@glamdistuciones.com.ar","telefono":"","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Global Hits","contacto":"Belen","email":"belen.broghera@globalhitss.com","telefono":"","esCliente":true,"notas":"","potencial":"","area":""},{"empresa":"Vacunar","contacto":"Maria Soledad Tedesco","email":"marketing@vacunar.com.ar","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":"Marketing"},{"empresa":"Vacunar","contacto":"","email":"comunicacion@vacunar.com.ar","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":""},{"empresa":"Global Logic","contacto":"Micaela Uberti","email":"micaela.uberti@globallogic.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Grupo EMAC","contacto":"Eduardo Barrionuevo","email":"eduardob@emacsa.com.ar","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Grupo Gestion","contacto":"Florencia Casella","email":"fcasella@grupo-gestion.com.ar","telefono":"48744600","esCliente":false,"notas":"","potencial":"ALTO","area":"Proveedores"},{"empresa":"Grupo L","contacto":"Lucia Muttis","email":"lucia.muttis@grupolargentina.com","telefono":"1136877339","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Grupo ORBE","contacto":"Silvana Beatriz GOMEZ","email":"sgomez@orbeproject.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Grupo Via","contacto":"Martina Puopolo","email":"mpuopolo@grupovia.com","telefono":"11 5160-2587","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Hamburgsud","contacto":"Dreszman, Samantha","email":"","telefono":"+54 11 5789 9900","esCliente":false,"notas":"","potencial":"BAJO","area":"customer services"},{"empresa":"Hausler","contacto":"","email":"dmarelli@hausler.com.ar","telefono":"1121623106","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Holistor","contacto":"Noelia rodriguez","email":"nrodriguez@holistor.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Xelere","contacto":"Carla Redondo","email":"credondo@xelere.com","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":"RRHH"},{"empresa":"Xelere","contacto":"Laura Alonso","email":"calonso@xelere.com","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":""},{"empresa":"HR Assistant","contacto":"Camila Nuño","email":"camila.nuno@truenorth.co","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"ICS","contacto":"Camila Benitez","email":"camilabenitez@icsred.com","telefono":"1133818547","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Impexpro","contacto":"MARIANA SÁNCHEZ","email":"msanchez@impexpro.com.ar","telefono":"1132202885","esCliente":false,"notas":"","potencial":"","area":"Marketing"},{"empresa":"Impresores","contacto":"Julieta Bolter","email":"jbolter@egimpresores.com.ar","telefono":"(54) 230 4452600","esCliente":false,"notas":"fin de año al aire libre","potencial":"","area":"RRHH"},{"empresa":"Infor","contacto":"Luciana Urrestarazu","email":"luciana.urrestarazu@infor.com","telefono":"+54 9 11 6493 6459","esCliente":true,"notas":"","potencial":"ALTO","area":""},{"empresa":"Insitu Logistica","contacto":"Naara Reig","email":"nreig@insitulogistica.com.ar","telefono":"1130002547","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Ipesa","contacto":"Maria Eugenia Pineda","email":"eugenia.pineda@ipesa.net","telefono":"1563540939","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"JJ Ramos","contacto":"Juan jose Ramos","email":"jramos@ljramos.com.ar","telefono":"11-3020-8212","esCliente":false,"notas":"","potencial":"MEDIO","area":"dueño"},{"empresa":"Kimberly-Clark, Argentina","contacto":"Hector Silva Bejarano","email":"","telefono":"+54 91133678890","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Kolektor","contacto":"Macarena Ramos Ruffino","email":"mruffino@kolektor.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"KWZ SRL","contacto":"NADIA FAZZARI","email":"nadiaf@kwzarq.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Kydat","contacto":"Lourdes Mourino","email":"lourdes.mourino@kydat.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Lab de Medicina","contacto":"Gabriela","email":"recursoshumanos@labmedicina.com","telefono":"4857-9309","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"Laboratorios Poen","contacto":"Iara Silva","email":"isilva@poen.net.ar","telefono":"46700100","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"LDC","contacto":"Gabriel Velasquez","email":"gabriela.velasquez@LDC.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Lebyes","contacto":"Lenuam Farinas","email":"","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Ledevit","contacto":"","email":"mperez@ledevit.com","telefono":"11 3780-9754","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Lemamotor","contacto":"Sofia Cano Laso","email":"eventos@lemamotor.com","telefono":"1154841679","esCliente":false,"notas":"ffaa 2024","potencial":"","area":""},{"empresa":"Lihue","contacto":"Rocio Gomez","email":"rgomez@lihue.com.ar","telefono":"1554255888","esCliente":false,"notas":"fin de año al aire libre","potencial":"","area":"RRHH"},{"empresa":"Lyracons","contacto":"Rosario Rodriguez Moro","email":"rrodriguezmoro@lyracons.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Magnetico","contacto":"Romina Castro","email":"romi@magnetico.dev","telefono":"1168746049","esCliente":false,"notas":"Aniversario empresarial","potencial":"","area":"RRHH"},{"empresa":"Map Latam","contacto":"Natalia","email":"nfanjul@maplatam.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Maritima Meridian SA","contacto":"Lenzi Marilina","email":"mlenzi@meridian.com.ar","telefono":"11678358916","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Medicos Sin Frontera","contacto":"Santiago Casanovas","email":"santiago.CASANOVAS@buenosaires.msf.org","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Mercado Libre","contacto":"Estefania Schimpf","email":"estefania.schimpf@mercadolibre.com","telefono":"","esCliente":true,"notas":"me pidio varias veces","potencial":"ALTO","area":""},{"empresa":"Meridional Seguros","contacto":"Durigon Agustina","email":"ADurigon@meridionalseguros.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Microcom Argentina SA","contacto":"Luciano Raso","email":"lraso@microcom.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Minera Santa Cruz","contacto":"SILVINA VARELA","email":"","telefono":"41327900","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Moco","contacto":"Nicolas","email":"Nicolas.paludi@mooco.studio","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Mones Hnos","contacto":"Agostina Mones","email":"agostinamones@moneshnos.com.ar","telefono":"1168750793","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Mr. Cavalieri SA","contacto":"Sebastian Cataron","email":"logistica@cavalieri.com.ar","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Multiproyectos DMC","contacto":"Aydee","email":"recursoshumanos@mapacheparts.com","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Nacion Seguros SA","contacto":"Santiago Reynoso","email":"santiagoreynoso4@gmail.com","telefono":"1133009051","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Navicon","contacto":"Natalia Delio","email":"ndelio@navicon.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"NEC Argentina S.A.","contacto":"Gisela Losardo","email":"gisela.losardo@la.nec.com","telefono":"","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Negocios de granos SA","contacto":"Magalí Raice","email":"mraice@ngranos.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"New Bytes","contacto":"Eloy Passarella","email":"epassarella@nb.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Nilesen","contacto":"Laila Levin","email":"laila.litvin@nielsen.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Nodus company","contacto":"Brenda","email":"brenda.a@noduscompany.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"NOVOCAP S.A.","contacto":"Romina Muñoz","email":"romina.munoz@novocap.com","telefono":"42082975","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Nuskin","contacto":"","email":"jmhernandez@nuskin.com","telefono":"","esCliente":true,"notas":"","potencial":"ALTO","area":""},{"empresa":"Nutricion","contacto":"Alejandra Botta","email":"alejandra@ics.uy","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Octavo Piso SRL","contacto":"Julieta Alejandra Risso","email":"julieta.risso@octavo-piso.com.ar","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Ofidirect","contacto":"Georgina Bolig","email":"gbolig@ofidirect.com","telefono":"","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Oig","contacto":"Ezequiel Egea","email":"ezeegea@hotmail.com","telefono":"1135908231","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Olivera Inversores","contacto":"Gabriel","email":"estudioarbiaolivera@gmail.com","telefono":"11 2521-9876","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Omnilife","contacto":"Marisa Aguero","email":"marisa.aguero@omnilife.com","telefono":"1159123261","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Opdea","contacto":"Laura Zeballos","email":"","telefono":"4338-2400","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Opinaia S.A.","contacto":"Adrian Polito","email":"adrian.polito@opinaia.net","telefono":"1151231507","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Ospadep","contacto":"","email":"","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Pampa Energia","contacto":"Gabriela Antunez","email":"GABRIELA.ANTUNEZ@pampaenergia.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Patagonia Candles","contacto":"Maiara Valenzesi","email":"maiara.valenzesi@patagoniacandles.com","telefono":"1141802430","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Patagonia Flooring","contacto":"Denise narvaez","email":"denise.narvaez@patagoniaflooring.com","telefono":"1122164407","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Pearson","contacto":"Adriana Contrera","email":"adriana.contrera@pearson.com","telefono":"43096130","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Pedidos Ya","contacto":"Bruno Garcia Ayerdi","email":"bruno.ayerdi@pedidosya.com","telefono":"","esCliente":false,"notas":"compras","potencial":"ALTO","area":""},{"empresa":"Pedidos Ya","contacto":"Florencia Castro","email":"florencia.castro@pedidosya.com","telefono":"","esCliente":false,"notas":"","potencial":"ALTO","area":""},{"empresa":"Pedidos Ya","contacto":"Maria Galmes","email":"maria.galmes@pedidosya.com","telefono":"","esCliente":false,"notas":"","potencial":"ALTO","area":""},{"empresa":"Pedidos Ya","contacto":"German Roland","email":"german.roland@pedidosya.com","telefono":"","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"phonix","contacto":"Joana","email":"joanahergenrether@phoenix-log.com","telefono":"1171618000","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Poen","contacto":"Iara Silva","email":"isilvia@poen.net.ar","telefono":"54 11 2517-6576","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Poregur","contacto":"Jorge Ferreyra","email":"Jorge-Luis.Ferreyra@prosegur.com","telefono":"54 11 4709 8000","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Presta Hoy","contacto":"Laura Fernandez","email":"","telefono":"(54 11) 4874 2284","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Pro hygiene","contacto":"Micaela","email":"micaela.limoni@prohygiene.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Propia","contacto":"Damian","email":"damianghervias@gmail.com","telefono":"1155916773","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Proteccion de riesgos","contacto":"Yerusca Gonzalez","email":"ygonzalez@proteccionderiesgos.com.ar","telefono":"11 4730 0215","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Provincia ART","contacto":"Samanta tro","email":"stro@provart.com.ar","telefono":"1134452309","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Puma","contacto":"Pepe Gelero","email":"pepe.gerlero@puma.com","telefono":"","esCliente":true,"notas":"jornadas Catering","potencial":"ALTO","area":""},{"empresa":"QSERVICES","contacto":"Maria Belen Arrabaca Pimenta","email":"belen.arrabaca@qservices.com.ar","telefono":"+5411 4342 8034","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"QYT TRADE SRL","contacto":"Laura Andres","email":"administracion@qyt.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Redimer S.A.","contacto":"Ana Reboredo","email":"reboredo.ana@drofar.com.ar","telefono":"4855-2893","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Rehau","contacto":"Martin Hernandez","email":"Martin.hernandez@rehau.com","telefono":"","esCliente":false,"notas":"nuevo","potencial":"ALTO","area":""},{"empresa":"Ricale Viajes","contacto":"Guilermina","email":"guillermina@ricale.com","telefono":"57764003","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Rmr Technology Solutions","contacto":"Julieta Ramirez","email":"jramirez@rmrconsultores.com","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Round table studio","contacto":"Micaela Sáenz López","email":"msaenz@roundtablestudio.net","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"RR Construcciones SA","contacto":"Florencia Taborda","email":"ft@rrconstruccionessa.com.ar","telefono":"011 71016997","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Sedesa","contacto":"Gladys Ales","email":"gales@sedesa.com.ar","telefono":"1142312800","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Service Management SA","contacto":"Gabriela Larreguy","email":"glarreguy@smanagement.com.ar","telefono":"1561172400","esCliente":false,"notas":"ffaa2024","potencial":"","area":""},{"empresa":"SGS","contacto":"Mercedes Cicciaro","email":"","telefono":"+54 11 4124 2045","esCliente":false,"notas":"","potencial":"ALTO","area":"RRHH"},{"empresa":"SOUTHBAY","contacto":"Anabel","email":"anabel.scaldaferro@southbay.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Swetech","contacto":"","email":"","telefono":"","esCliente":false,"notas":"FAMILy Day","potencial":"ALTO","area":""},{"empresa":"Techint","contacto":"Veronica","email":"VMARIN@exiros.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Tembici","contacto":"Agostina Alvarez","email":"agostina.alvarez@tembici.com","telefono":"1124547996","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Tgv","contacto":"Lucia","email":"lviciano@tgv.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"MEDIO","area":""},{"empresa":"Tip Top Argentina S.A.","contacto":"Nicolas Gomez","email":"nicolas.gomez@tiptop.com.ar","telefono":"1124518444","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Toyota","contacto":"Ximena Dominguez Herrera","email":"xdominguez@toyotsu.com.ar","telefono":"","esCliente":true,"notas":"pidieo Family Day 2022","potencial":"ALTO","area":""},{"empresa":"TURBODINA SAIC","contacto":"Marcela Navarro","email":"marcelan@turbodina.com.ar","telefono":"1134013525","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"UNDP","contacto":"Noelia Oliveri","email":"noelia.oliveri@undp.org","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":"RRHH"},{"empresa":"Universo Belleza","contacto":"Patricia Benitez","email":"patricia@universodebelleza.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"VALID","contacto":"Emilia Congiusta","email":"emilia.congiusta@valid.com","telefono":"1131479105","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Valmec","contacto":"Yulianny Bracho","email":"ybracho@valmec.com.ar","telefono":"9 11-5876 6391","esCliente":false,"notas":"fin de ano en Pilar","potencial":"","area":"Comercial"},{"empresa":"VANTEK","contacto":"Daniela Garcia","email":"dgarcia@vantek.co","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"varia code","contacto":"sofia hermida","email":"sofia@variacode.com","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Via Bariloche","contacto":"Andrea Aquilina","email":"aaquilina@viacorreo.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Vreme","contacto":"Bibiana","email":"info@nexogroup.net","telefono":"5491159277719","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Vtex","contacto":"Paula Fernandez","email":"paula.fernandez@vtex.com","telefono":"1139265609","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Wavin","contacto":"Florencia Forte","email":"florencia.forte@wavin.com","telefono":"(+54 11) 48488440","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Wolox","contacto":"Rebeca Bloch","email":"rebecca.bloch@wolox.com.ar","telefono":"11 6091 2166","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"woodbridgegroup","contacto":"Jimena Aldana Cerezales","email":"Jimena_Cerezalez@woodbridgegroup.com","telefono":"54 2304-496154","esCliente":false,"notas":"","potencial":"BAJO","area":""},{"empresa":"Woodplc","contacto":"Florencia Caceres","email":"florencia.caceres@woodplc.com","telefono":"","esCliente":false,"notas":"Presupuesto FFA 2024","potencial":"","area":""},{"empresa":"Zerox SRL","contacto":"Victoria Galiano","email":"gerencia@zerox.com.ar","telefono":"","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"ZyS Factors","contacto":"Jesica Gonzalez","email":"jgonzalez@zysfactors.com","telefono":"1166550092","esCliente":false,"notas":"ffa 2024","potencial":"","area":""},{"empresa":"Cummins","contacto":"Pablo Mengido","email":"pablo.mengido@cummins.com","telefono":"54 9(11)3280-8747","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Loginter","contacto":"Sebastian Molina","email":"smolina@loginter.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Adila","contacto":"Juana Martinez","email":"juana.martinez@adilafinpay.com","telefono":"1134354659","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Automoviles San Jorge","contacto":"","email":"desteban@sanjorge-sa.com.ar","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"D&B ABOGADOS","contacto":"Claudia Cabral","email":"recursoshumanos@dybabogados.com.ar","telefono":"1176360628","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"International Argenetics Lab","contacto":"Marielys Moren","email":"marielys.moreno@argeneticsar.com.ar","telefono":"1132502612","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Evolution","contacto":"Sofia Loyte","email":"sloyte@evolution.com","telefono":"1140646510","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"ELDAR S.R.L.","contacto":"Joaquin Vidal","email":"joaquin.vidal@eldars.com.ar","telefono":"1133954205","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"PGK CONSULTORES","contacto":"georgina giselle rossi","email":"rociorossi1995@gmail.com","telefono":"1162814224","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"RICARDO RIZZA","contacto":"Free Customs","email":"rrizza@freecustoms.com.ar","telefono":"1168918362","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Pedidos Ya","contacto":"Cindy Lowes","email":"","telefono":"","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"GMSB","contacto":"Ornella Pautasso","email":"ornella.pautasso@sb.com.ar","telefono":"3435495783","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Microcorr SRL","contacto":"Natalia Tissera","email":"nataliatissera@microcorr.com.ar","telefono":"1164284346","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Intuit srl","contacto":"Victoria Guiglielmoni","email":"victoria.guiglielmoni@intuit.ar","telefono":"1136520583","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Lustramax s.r.l","contacto":"Pamela","email":"pcoldwell@lustramax.com.ar","telefono":"01135929656","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Vialto Partners","contacto":"Yael Quinzano","email":"esther.quinzano@vialto.com","telefono":"1134360871","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Qualis Lab","contacto":"Patricio Roldan","email":"patricio.roldan@qualis-lab.com","telefono":"54 9 11 2188-3552","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Pro Global","contacto":"Cintia Atay","email":"cintia.atay@pro-global.com","telefono":"1153402077","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"GRUPO QUIRICO","contacto":"Camimla","email":"recepcion@quirico.com.ar","telefono":"1162889984","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Prudencial Seguros","contacto":"Soledad Roldan","email":"rrhh@prudenciaseguros.com.ar","telefono":"1158552837","esCliente":false,"notas":"","potencial":"","area":""},{"empresa":"Tienda de Cafe","contacto":"Melisa Daniela Parra","email":"melisparratdc@gmail.com","telefono":"1158011939","esCliente":false,"notas":"","potencial":"","area":""}];
+let crmData = [];
+let eventsData = [];
+let filtered = [];
+let currentPage = 1;
+const PER_PAGE = 25;
+let editingId = null;
+let currentEventId = null;
+let currentSheetIdx = 0;
+let autoRefreshTimer = null;
+
+// ═══════════════════════════════════════════
+//  SUPABASE — CRM
+// ═══════════════════════════════════════════
+async function loadCRM() {
+  try {
+    setSyncStatus('syncing', 'Cargando...');
+    const data = await sbFetch('gira_empresas?order=empresa.asc&limit=1000');
+    if (data && data.length > 0) {
+      crmData = data;
+      setSyncStatus('ok', 'Sincronizado');
+    } else {
+      // Primera vez: seed con datos iniciales
+      await seedCRM();
+    }
+  } catch(e) {
+    setSyncStatus('error', 'Sin conexión');
+    // Fallback a localStorage
+    const s = localStorage.getItem('gira_crm_v1');
+    crmData = s ? JSON.parse(s) : RAW_DATA.map((c,i) => ({...c, id: i}));
+    toast('Usando datos locales (sin conexión)', 'err');
+  }
+  applyFilters();
+  updateStats();
+}
+
+async function seedCRM() {
+  setSyncStatus('syncing', 'Importando datos...');
+  // Insert in batches of 50
+  const batch = 50;
+  for (let i = 0; i < RAW_DATA.length; i += batch) {
+    await sbFetch('gira_empresas', {
+      method: 'POST',
+      prefer: 'return=minimal',
+      body: RAW_DATA.slice(i, i+batch)
+    });
+  }
+  const data = await sbFetch('gira_empresas?order=empresa.asc&limit=1000');
+  crmData = data || [];
+  setSyncStatus('ok', 'Datos importados ✓');
+  toast('¡297 empresas importadas correctamente!', 'ok');
+}
+
+async function saveCompanyDB(obj) {
+  try {
+    setSyncStatus('syncing', 'Guardando...');
+    if (editingId !== null) {
+      await sbFetch('gira_empresas?id=eq.' + editingId, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: obj
+      });
+      const idx = crmData.findIndex(c => c.id === editingId);
+      if (idx >= 0) crmData[idx] = {...obj, id: editingId};
+    } else {
+      const res = await sbFetch('gira_empresas', {
+        method: 'POST',
+        body: obj
+      });
+      if (res && res[0]) crmData.push(res[0]);
+    }
+    setSyncStatus('ok', 'Guardado ✓');
+    toast('Empresa guardada', 'ok');
+  } catch(e) {
+    setSyncStatus('error', 'Error al guardar');
+    toast('Error al guardar: ' + e.message, 'err');
+  }
+}
+
+async function deleteCompanyDB(id) {
+  try {
+    await sbFetch('gira_empresas?id=eq.' + id, { method: 'DELETE', prefer: 'return=minimal' });
+    crmData = crmData.filter(c => c.id !== id);
+    setSyncStatus('ok', 'Sincronizado');
+    toast('Empresa eliminada');
+  } catch(e) {
+    toast('Error al eliminar', 'err');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  SUPABASE — EVENTOS
+// ═══════════════════════════════════════════
+async function loadEvents() {
+  try {
+    const data = await sbFetch('gira_eventos?order=created_at.desc&limit=200');
+    eventsData = (data || []).map(e => ({
+      ...e,
+      checklist: e.checklist || [],
+      cronoInterno: e.crono_interno || [],
+      cronoCliente: e.crono_cliente || [],
+      proveedores: e.proveedores || [],
+      sheets: e.sheets || []
+    }));
+  } catch(e) {
+    const s = localStorage.getItem('gira_events_v1');
+    eventsData = s ? JSON.parse(s) : [];
+  }
+}
+
+async function saveEventDB(ev) {
+  try {
+    setSyncStatus('syncing', 'Guardando...');
+    const payload = {
+      nombre: ev.nombre || '',
+      tipo: ev.tipo || '',
+      empresa: ev.empresa || '',
+      fecha: ev.fecha || null,
+      estado: ev.estado,
+      descripcion: ev.descripcion || '',
+      notas: ev.notas || '',
+      checklist: ev.checklist || [],
+      crono_interno: ev.cronoInterno || [],
+      crono_cliente: ev.cronoCliente || [],
+      proveedores: ev.proveedores || [],
+      sheets: ev.sheets || []
+    };
+    if (ev.id) {
+      await sbFetch('gira_eventos?id=eq.' + ev.id, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: payload
+      });
+    } else {
+      const res = await sbFetch('gira_eventos', { method: 'POST', body: payload });
+      if (res && res[0]) ev.id = res[0].id;
+    }
+    setSyncStatus('ok', 'Guardado ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Error');
+    toast('Error al guardar evento', 'err');
+  }
+}
+
+async function deleteEventDB(id) {
+  try {
+    await sbFetch('gira_eventos?id=eq.' + id, { method: 'DELETE', prefer: 'return=minimal' });
+  } catch(e) { toast('Error al eliminar', 'err'); }
+}
+
+// Auto-refresh each 15s when on eventos tab
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(async () => {
+    const prev = JSON.stringify(eventsData);
+    await loadEvents();
+    if (JSON.stringify(eventsData) !== prev) renderKanban();
+  }, 15000);
+}
+function stopAutoRefresh() {
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+}
+
+// ═══════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════
+function showSection(evt, id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  evt.currentTarget.classList.add('active');
+  if (id === 'eventos') { loadEvents().then(renderKanban); startAutoRefresh(); }
+  else stopAutoRefresh();
+}
+
+// ═══════════════════════════════════════════
+//  CRM
+// ═══════════════════════════════════════════
+function applyFilters() {
+  const q = document.getElementById('crm-search').value.toLowerCase();
+  const fc = document.getElementById('f-cliente').value;
+  const fp = document.getElementById('f-potencial').value;
+  const fa = document.getElementById('f-area').value;
+  filtered = crmData.filter(c => {
+    const matchQ = !q || (c.empresa||'').toLowerCase().includes(q) || (c.contacto||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q);
+    const matchC = !fc || (fc === 'si' ? c.esCliente : !c.esCliente);
+    const matchP = !fp || c.potencial === fp;
+    const matchA = !fa || c.area === fa;
+    return matchQ && matchC && matchP && matchA;
+  });
+  currentPage = 1;
+  renderTable();
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = crmData.length;
+  document.getElementById('stat-clientes').textContent = crmData.filter(c => c.esCliente).length;
+  document.getElementById('stat-altos').textContent = crmData.filter(c => c.potencial === 'ALTO').length;
+  document.getElementById('stat-mostrando').textContent = filtered.length;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('crm-tbody');
+  const start = (currentPage - 1) * PER_PAGE;
+  const page = filtered.slice(start, start + PER_PAGE);
+  tbody.innerHTML = page.map(c => {
+    const emailClean = (c.email||'').replace(/mailto:/g,'').split('/')[0].trim().split(' ')[0].trim();
+    const telClean = (c.telefono||'').replace(/[^0-9+]/g,'');
+    const bp = c.potencial === 'ALTO' ? 'badge-alto' : c.potencial === 'MEDIO' ? 'badge-medio' : c.potencial === 'BAJO' ? 'badge-bajo' : '';
+    const notasTrunc = (c.notas||'').length > 38 ? (c.notas||'').substring(0,38) + '...' : (c.notas||'');
+    return `<tr>
+      <td class="empresa-name" title="${c.empresa}">${(c.empresa||'').substring(0,34)}${(c.empresa||'').length>34?'…':''}</td>
+      <td class="contacto-name">${c.contacto || '<span class="no-email">—</span>'}</td>
+      <td style="font-size:12px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${emailClean ? `<span title="${emailClean}">${emailClean.substring(0,28)}${emailClean.length>28?'…':''}</span>` : '<span class="no-email">—</span>'}</td>
+      <td style="font-size:12px;color:var(--text3);">${(c.telefono||'').substring(0,20)||'—'}</td>
+      <td><span class="badge ${c.esCliente ? 'badge-cliente' : 'badge-prospecto'}">${c.esCliente ? '✅ Cliente' : 'Prospecto'}</span></td>
+      <td>${bp ? `<span class="badge ${bp}">${c.potencial}</span>` : '—'}</td>
+      <td style="font-size:12px;color:var(--text2);">${c.area || '—'}</td>
+      <td style="font-size:12px;color:var(--text3);max-width:140px;" title="${c.notas||''}">${notasTrunc || '—'}</td>
+      <td><div class="contact-btns">
+        ${emailClean ? `<a class="mail-btn" href="mailto:${emailClean}" title="Enviar mail">✉</a>` : ''}
+        ${telClean ? `<a class="wa-btn" href="https://wa.me/${telClean.replace('+','')}" target="_blank" title="WhatsApp">📱</a>` : ''}
+      </div></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openEditModal(${c.id})">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="confirmDeleteCompany(${c.id})" style="margin-left:3px;">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+  renderPagination();
+  document.getElementById('page-info').textContent = `${start+1}–${Math.min(start+PER_PAGE, filtered.length)} de ${filtered.length}`;
+}
+
+function renderPagination() {
+  const total = Math.ceil(filtered.length / PER_PAGE);
+  const btns = document.getElementById('page-btns');
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= currentPage-2 && i <= currentPage+2)) {
+      html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (i === currentPage-3 || i === currentPage+3) {
+      html += `<span style="color:var(--text3);padding:0 3px;">…</span>`;
+    }
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>›</button>`;
+  btns.innerHTML = html;
+}
+
+function goPage(p) {
+  const total = Math.ceil(filtered.length / PER_PAGE);
+  if (p < 1 || p > total) return;
+  currentPage = p; renderTable();
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('add-modal-title').textContent = 'Nueva Empresa';
+  ['f-empresa','f-contacto','f-email','f-telefono','f-notas'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-es-cliente').value = 'false';
+  document.getElementById('f-potencial-input').value = '';
+  document.getElementById('f-area-input').value = '';
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const c = crmData.find(x => x.id === id); if (!c) return;
+  editingId = id;
+  document.getElementById('add-modal-title').textContent = 'Editar Empresa';
+  document.getElementById('f-empresa').value = c.empresa || '';
+  document.getElementById('f-contacto').value = c.contacto || '';
+  document.getElementById('f-email').value = c.email || '';
+  document.getElementById('f-telefono').value = c.telefono || '';
+  document.getElementById('f-notas').value = c.notas || '';
+  document.getElementById('f-es-cliente').value = c.esCliente ? 'true' : 'false';
+  document.getElementById('f-potencial-input').value = c.potencial || '';
+  document.getElementById('f-area-input').value = c.area || '';
+  document.getElementById('add-modal').classList.add('open');
+}
+
+async function saveCompany() {
+  const empresa = document.getElementById('f-empresa').value.trim();
+  if (!empresa) { toast('El nombre de la empresa es obligatorio', 'err'); return; }
+  const obj = {
+    empresa, contacto: document.getElementById('f-contacto').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    telefono: document.getElementById('f-telefono').value.trim(),
+    esCliente: document.getElementById('f-es-cliente').value === 'true',
+    potencial: document.getElementById('f-potencial-input').value,
+    area: document.getElementById('f-area-input').value,
+    notas: document.getElementById('f-notas').value.trim()
+  };
+  await saveCompanyDB(obj);
+  closeModal('add-modal');
+  applyFilters();
+  updateDatalist();
+}
+
+async function confirmDeleteCompany(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  await deleteCompanyDB(id);
+  applyFilters();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function updateDatalist() {
+  const dl = document.getElementById('empresas-list');
+  if (dl) dl.innerHTML = [...new Set(crmData.map(c => c.empresa))].map(e => `<option value="${e}">`).join('');
+}
+
+// ═══════════════════════════════════════════
+//  KANBAN
+// ═══════════════════════════════════════════
+const ESTADOS = [
+  { id:'consulta',      label:'Consulta recibida',  color:'#0077a8', emoji:'📥' },
+  { id:'presupuesto',   label:'Presupuesto enviado', color:'#e07c2b', emoji:'💰' },
+  { id:'confirmado',    label:'Confirmado',          color:'#6c3acd', emoji:'✅' },
+  { id:'en-produccion', label:'En producción',       color:'#c0392b', emoji:'⚙️' },
+  { id:'ejecutado',     label:'Ejecutado',           color:'#1a9e5c', emoji:'🎉' }
+];
+
+function renderKanban() {
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = ESTADOS.map(est => {
+    const cards = eventsData.filter(e => e.estado === est.id);
+    return `<div class="kanban-col">
+      <div class="col-header">
+        <div class="col-title"><span class="col-dot" style="background:${est.color}"></span><span style="color:${est.color}">${est.emoji} ${est.label}</span></div>
+        <span class="col-count">${cards.length}</span>
+      </div>
+      ${cards.map(e => `
+        <div class="kanban-card" onclick="openEventDetail(${e.id})">
+          <div class="card-title-wrap">
+            <input class="card-title-input" value="${(e.nombre||e.tipo||'').replace(/"/g,'&quot;')}"
+              onclick="event.stopPropagation()"
+              onblur="saveCardTitle(${e.id}, this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
+            <span class="card-edit-icon">✏️</span>
+          </div>
+          ${e.tipo ? `<div style="font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500;">${e.tipo}</div>` : ''}${e.empresa ? `<div class="card-empresa">🏢 ${e.empresa}</div>` : ''}
+          ${e.fecha ? `<div class="card-fecha">📅 ${formatDate(e.fecha)}</div>` : ''}
+          <div class="card-footer">
+            <div class="card-tags">
+              ${(e.checklist||[]).length ? `<span class="card-tag">✅ ${(e.checklist||[]).filter(c=>c.done).length}/${(e.checklist||[]).length}</span>` : ''}
+              ${(e.proveedores||[]).length ? `<span class="card-tag">🤝 ${(e.proveedores||[]).length} prov.</span>` : ''}
+              ${(e.sheets||[]).length ? `<span class="card-tag">📄 ${(e.sheets||[]).length} notas</span>` : ''}
+            </div>
+            <button class="btn btn-red btn-sm" onclick="event.stopPropagation();confirmDeleteEvent(${e.id})" style="padding:3px 7px;font-size:10px;">🗑</button>
+          </div>
+        </div>
+      `).join('')}
+      <button class="add-card-btn" onclick="openNewEventWithEstado('${est.id}')">+ Agregar evento</button>
+    </div>`;
+  }).join('');
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function openNewEventModal() {
+  ['ne-nombre','ne-empresa','ne-desc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ne-fecha').value = '';
+  document.getElementById('ne-estado').value = 'consulta';
+  document.getElementById('new-event-modal').classList.add('open');
+}
+
+function openNewEventWithEstado(estado) {
+  openNewEventModal();
+  document.getElementById('ne-estado').value = estado;
+}
+
+async function saveNewEvent() {
+  const tipo = (document.getElementById('ne-tipo') ? document.getElementById('ne-tipo').value : '') || '';
+  const nombre = document.getElementById('ne-nombre').value.trim();
+  if (!tipo && !nombre) { toast('Seleccioná el tipo de evento', 'err'); return; }
+  const ev = {
+    tipo,
+    nombre: nombre || tipo,
+    empresa: document.getElementById('ne-empresa').value.trim(),
+    fecha: document.getElementById('ne-fecha').value || null,
+    estado: document.getElementById('ne-estado').value,
+    descripcion: document.getElementById('ne-desc').value.trim(),
+    notas:'', checklist:[], cronoInterno:[], cronoCliente:[], proveedores:[], sheets:[]
+  };
+  await saveEventDB(ev);
+  await loadEvents();
+  closeModal('new-event-modal');
+  renderKanban();
+  toast('Evento creado', 'ok');
+}
+
+async function saveCardTitle(id, value) {
+  const ev = eventsData.find(e => e.id === id); if (!ev) return;
+  ev.nombre = value.trim() || ev.nombre;
+  await saveEventDB(ev);
+  renderKanban();
+}
+
+async function confirmDeleteEvent(id) {
+  if (!confirm('¿Eliminar este evento?')) return;
+  await deleteEventDB(id);
+  eventsData = eventsData.filter(e => e.id !== id);
+  renderKanban();
+}
+
+// ═══════════════════════════════════════════
+//  EVENT DETAIL — SHEETS
+// ═══════════════════════════════════════════
+const BUILTIN_SHEETS = [
+  { id:'general',       label:'📋 General',        type:'general' },
+  { id:'checklist',     label:'✅ Checklist',       type:'checklist' },
+  { id:'crono-interno', label:'🗓 Crono. Interno',  type:'crono-interno' },
+  { id:'crono-cliente', label:'📤 Crono. Cliente',  type:'crono-cliente' },
+  { id:'proveedores',   label:'🤝 Proveedores',     type:'proveedores' },
+];
+
+function openEventDetail(id) {
+  const ev = eventsData.find(e => e.id === id); if (!ev) return;
+  currentEventId = id; currentSheetIdx = 0;
+  document.getElementById('ed-title').value = ev.nombre || '';
+  document.getElementById('ed-empresa').value = ev.empresa || '';
+  document.getElementById('ed-fecha').value = ev.fecha || '';
+  document.getElementById('ed-estado-select').value = ev.estado;
+  renderSheets(ev);
+  document.getElementById('event-detail-modal').classList.add('open');
+}
+
+function getAllSheets(ev) {
+  return [...BUILTIN_SHEETS, ...(ev.sheets || [])];
+}
+
+function renderSheets(ev) {
+  const all = getAllSheets(ev);
+  document.getElementById('sheet-tabs-bar').innerHTML =
+    all.map((s,i) => `
+      <button class="sheet-tab-btn ${i===currentSheetIdx?'active':''}" onclick="switchSheet(${i})" id="stab-${i}">
+        ${s.type==='blank'
+          ? `<input class="tab-rename-input" value="${(s.label||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation()" onblur="renameSheet(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="width:${Math.max(60,(s.label||'').length*8)}px">`
+          : s.label}
+        ${s.type==='blank' ? `<span class="tab-close" onclick="event.stopPropagation();removeSheet(${i})">✕</span>` : ''}
+      </button>`).join('') +
+    `<button class="add-sheet-btn" onclick="addBlankSheet()" title="Nueva hoja en blanco">＋</button>`;
+
+  document.getElementById('sheet-contents').innerHTML =
+    all.map((s,i) => `<div class="sheet-content ${i===currentSheetIdx?'active':''}" id="scontent-${i}">${renderSheetContent(s,ev,i)}</div>`).join('');
+}
+
+function switchSheet(i) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  currentSheetIdx = i; renderSheets(ev);
+}
+
+async function addBlankSheet() {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.sheets = ev.sheets || [];
+  ev.sheets.push({ id:'blank-'+Date.now(), label:'Nueva hoja', type:'blank', content:'' });
+  await saveEventDB(ev);
+  currentSheetIdx = BUILTIN_SHEETS.length + ev.sheets.length - 1;
+  renderSheets(ev);
+}
+
+async function renameSheet(idx, val) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  const bi = idx - BUILTIN_SHEETS.length;
+  if (bi >= 0 && ev.sheets && ev.sheets[bi]) {
+    ev.sheets[bi].label = val.trim() || ev.sheets[bi].label;
+    await saveEventDB(ev);
+  }
+}
+
+async function removeSheet(idx) {
+  if (!confirm('¿Eliminar esta hoja?')) return;
+  const ev = eventsData.find(e => e.id === currentEventId);
+  const bi = idx - BUILTIN_SHEETS.length;
+  if (bi >= 0 && ev.sheets) {
+    ev.sheets.splice(bi,1);
+    await saveEventDB(ev);
+    currentSheetIdx = Math.min(currentSheetIdx, getAllSheets(ev).length - 1);
+    renderSheets(ev);
+  }
+}
+
+async function saveBlankSheet(idx, val) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  const bi = idx - BUILTIN_SHEETS.length;
+  if (bi >= 0 && ev.sheets && ev.sheets[bi]) {
+    ev.sheets[bi].content = val;
+    await saveEventDB(ev);
+  }
+}
+
+function renderSheetContent(sheet, ev, sheetIdx) {
+  if (sheet.type === 'general') return `
+    <div class="section-label">Descripción</div>
+    <textarea class="notas-area" id="ed-desc" placeholder="Descripción y detalles del evento..." oninput="autosaveEvent()">${ev.descripcion||''}</textarea>
+    <div class="section-label">Notas internas</div>
+    <textarea class="notas-area" id="ed-notas" placeholder="Notas generales del equipo..." oninput="autosaveEvent()">${ev.notas||''}</textarea>`;
+
+  if (sheet.type === 'checklist') return `
+    <div class="section-label">Checklist de tareas</div>
+    <div id="checklist-list">${renderChecklistHTML(ev)}</div>
+    <div class="input-row" style="margin-top:10px;flex-wrap:wrap;gap:7px;">
+      <input type="text" class="form-input" id="new-check-text" placeholder="Nueva tarea...">
+      <input type="text" class="form-input" id="new-check-persona" placeholder="Asignado a..." style="max-width:150px;">
+      <input type="date" class="form-input" id="new-check-fecha" style="max-width:145px;">
+      <button class="btn btn-brand btn-sm" onclick="addChecklistItem()">+ Agregar</button>
+    </div>`;
+
+  if (sheet.type === 'crono-interno') return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div class="section-label" style="margin:0;">Cronograma interno</div>
+      <button class="btn btn-outline btn-sm" onclick="downloadCrono('interno')">⬇ Descargar</button>
+    </div>
+    <div class="input-row" style="margin-bottom:10px;flex-wrap:wrap;gap:7px;">
+      <input type="date" class="form-input" id="ci-dia" style="max-width:148px;">
+      <input type="text" class="form-input" id="ci-hora" placeholder="Horario" style="max-width:120px;">
+      <input type="text" class="form-input" id="ci-asunto" placeholder="Asunto">
+      <input type="text" class="form-input" id="ci-notas" placeholder="Notas" style="max-width:190px;">
+      <button class="btn btn-brand btn-sm" onclick="addCronoItem('interno')">+ Agregar</button>
+    </div>
+    <table class="crono-table"><thead><tr><th>Día</th><th>Horario</th><th>Asunto</th><th>Notas</th><th></th></tr></thead>
+    <tbody id="crono-interno-body">${renderCronoHTML('interno',ev.cronoInterno||[])}</tbody></table>`;
+
+  if (sheet.type === 'crono-cliente') return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div class="section-label" style="margin:0;">Cronograma para el cliente</div>
+      <button class="btn btn-outline btn-sm" onclick="downloadCrono('cliente')">⬇ Descargar</button>
+    </div>
+    <div class="input-row" style="margin-bottom:10px;flex-wrap:wrap;gap:7px;">
+      <input type="date" class="form-input" id="cc-dia" style="max-width:148px;">
+      <input type="text" class="form-input" id="cc-hora" placeholder="Horario" style="max-width:120px;">
+      <input type="text" class="form-input" id="cc-asunto" placeholder="Asunto">
+      <button class="btn btn-brand btn-sm" onclick="addCronoItem('cliente')">+ Agregar</button>
+    </div>
+    <table class="crono-table"><thead><tr><th>Día</th><th>Horario</th><th>Asunto</th><th></th></tr></thead>
+    <tbody id="crono-cliente-body">${renderCronoHTML('cliente',ev.cronoCliente||[])}</tbody></table>`;
+
+  if (sheet.type === 'proveedores') return `
+    <div class="section-label">Proveedores del evento</div>
+    <div id="proveedores-list">${renderProveedoresHTML(ev)}</div>
+    <div class="input-row" style="margin-top:10px;flex-wrap:wrap;gap:7px;">
+      <input type="text" class="form-input" id="prov-nombre" placeholder="Proveedor">
+      <input type="text" class="form-input" id="prov-servicio" placeholder="Servicio contratado">
+      <input type="text" class="form-input" id="prov-contacto" placeholder="Contacto" style="max-width:190px;">
+      <button class="btn btn-brand btn-sm" onclick="addProveedor()">+ Agregar</button>
+    </div>`;
+
+  // blank
+  return `
+    <div class="section-label">Hoja libre</div>
+    <textarea class="notas-area" style="min-height:300px;font-size:14px;line-height:1.8;"
+      placeholder="Escribí lo que necesites: ideas, presupuesto rápido, contactos..."
+      oninput="saveBlankSheet(${sheetIdx},this.value)">${sheet.content||''}</textarea>`;
+}
+
+async function saveEventTitle() {
+  const ev = eventsData.find(e => e.id === currentEventId); if (!ev) return;
+  const val = document.getElementById('ed-title').value.trim();
+  ev.nombre = val || ev.nombre;
+  await saveEventDB(ev);
+  renderKanban();
+}
+
+async function updateEventEstado() {
+  const ev = eventsData.find(e => e.id === currentEventId); if (!ev) return;
+  ev.estado = document.getElementById('ed-estado-select').value;
+  await saveEventDB(ev);
+  renderKanban();
+}
+
+let autosaveTimer = null;
+function autosaveEvent() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(async () => {
+    const ev = eventsData.find(e => e.id === currentEventId); if (!ev) return;
+    const d = document.getElementById('ed-desc');
+    const n = document.getElementById('ed-notas');
+    const em = document.getElementById('ed-empresa');
+    const fe = document.getElementById('ed-fecha');
+    if (d) ev.descripcion = d.value;
+    if (n) ev.notas = n.value;
+    if (em) ev.empresa = em.value;
+    if (fe) ev.fecha = fe.value;
+    await saveEventDB(ev);
+  }, 1200);
+}
+
+async function deleteCurrentEvent() {
+  if (!confirm('¿Eliminar este evento?')) return;
+  await deleteEventDB(currentEventId);
+  eventsData = eventsData.filter(e => e.id !== currentEventId);
+  closeModal('event-detail-modal');
+  renderKanban();
+}
+
+// ═══════════════════════════════════════════
+//  CHECKLIST
+// ═══════════════════════════════════════════
+function renderChecklistHTML(ev) {
+  const items = ev.checklist || [];
+  const done = items.filter(c=>c.done).length;
+  return (items.length ? `
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px;">
+        <span>${done} de ${items.length} completadas</span><span>${items.length?Math.round(done/items.length*100):0}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${items.length?Math.round(done/items.length*100):0}%"></div></div>
+    </div>` : '') +
+  items.map((c,i) => `
+    <div class="checklist-item">
+      <input type="checkbox" ${c.done?'checked':''} onchange="toggleCheck(${i})">
+      <div class="checklist-text ${c.done?'done':''}">${c.texto}</div>
+      <div class="checklist-meta">${c.persona?'👤 '+c.persona:''} ${c.fecha?'· '+formatDate(c.fecha):''}</div>
+      <button class="btn btn-red btn-sm" onclick="removeCheck(${i})">✕</button>
+    </div>`).join('');
+}
+
+function renderChecklist(ev) {
+  const el = document.getElementById('checklist-list');
+  if (el) el.innerHTML = renderChecklistHTML(ev);
+}
+
+async function addChecklistItem() {
+  const texto = document.getElementById('new-check-text').value.trim(); if (!texto) return;
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.checklist = ev.checklist || [];
+  ev.checklist.push({ texto, persona: document.getElementById('new-check-persona').value.trim(), fecha: document.getElementById('new-check-fecha').value, done: false });
+  ['new-check-text','new-check-persona','new-check-fecha'].forEach(id => document.getElementById(id).value='');
+  await saveEventDB(ev); renderChecklist(ev);
+}
+
+async function toggleCheck(i) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.checklist[i].done = !ev.checklist[i].done;
+  await saveEventDB(ev); renderChecklist(ev);
+}
+
+async function removeCheck(i) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.checklist.splice(i,1);
+  await saveEventDB(ev); renderChecklist(ev);
+}
+
+// ═══════════════════════════════════════════
+//  CRONOGRAMA
+// ═══════════════════════════════════════════
+function renderCronoHTML(type, items) {
+  return items.map((r,i) => `
+    <tr>
+      <td>${formatDate(r.dia)}</td><td>${r.hora}</td><td>${r.asunto}</td>
+      ${type==='interno'?`<td style="color:var(--text2)">${r.notas||''}</td>`:''}
+      <td><button class="btn btn-red btn-sm" onclick="removeCrono('${type}',${i})">✕</button></td>
+    </tr>`).join('') ||
+  `<tr><td colspan="${type==='interno'?5:4}" style="color:var(--text3);text-align:center;padding:18px;">Sin ítems aún</td></tr>`;
+}
+
+function renderCronoTable(type, items) {
+  const el = document.getElementById(`crono-${type}-body`);
+  if (el) el.innerHTML = renderCronoHTML(type, items);
+}
+
+async function addCronoItem(type) {
+  const pre = type === 'interno' ? 'ci' : 'cc';
+  const asunto = document.getElementById(`${pre}-asunto`).value.trim(); if (!asunto) return;
+  const ev = eventsData.find(e => e.id === currentEventId);
+  const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
+  ev[key] = ev[key] || [];
+  const item = { dia: document.getElementById(`${pre}-dia`).value, hora: document.getElementById(`${pre}-hora`).value.trim(), asunto };
+  if (type === 'interno') item.notas = document.getElementById('ci-notas').value.trim();
+  ev[key].push(item);
+  ev[key].sort((a,b) => (a.dia||'') < (b.dia||'') ? -1 : 1);
+  [`${pre}-dia`,`${pre}-hora`,`${pre}-asunto`].forEach(id => document.getElementById(id).value='');
+  if (type==='interno') document.getElementById('ci-notas').value='';
+  await saveEventDB(ev); renderCronoTable(type, ev[key]);
+}
+
+async function removeCrono(type, i) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
+  ev[key].splice(i,1);
+  await saveEventDB(ev); renderCronoTable(type, ev[key]);
+}
+
+function downloadCrono(type) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
+  const items = ev[key] || [];
+  const label = type === 'interno' ? 'Cronograma Interno' : 'Cronograma Cliente';
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:40px;color:#0d1f2d}h1{color:#00b4d8;border-bottom:2px solid #00b4d8;padding-bottom:10px}h2{color:#3a6070;font-size:16px;margin-bottom:18px}table{width:100%;border-collapse:collapse}th{background:#f4fafd;padding:10px 13px;text-align:left;border-bottom:2px solid #cce8f5;font-size:11px;text-transform:uppercase;letter-spacing:1px}td{padding:10px 13px;border-bottom:1px solid #e6f4fb;font-size:14px}</style></head><body>
+  <h1>Gira Eventos</h1><h2>${label} — ${ev.nombre}${ev.empresa?' ('+ev.empresa+')':''}</h2>
+  <table><thead><tr><th>Día</th><th>Horario</th><th>Asunto</th>${type==='interno'?'<th>Notas</th>':''}</tr></thead><tbody>
+  ${items.map(r=>`<tr><td>${formatDate(r.dia)}</td><td>${r.hora}</td><td>${r.asunto}</td>${type==='interno'?`<td>${r.notas||''}</td>`:''}</tr>`).join('')}
+  </tbody></table></body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download = `${label.replace(/ /g,'_')}_${ev.nombre.replace(/ /g,'_')}.html`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════
+//  PROVEEDORES
+// ═══════════════════════════════════════════
+const SEGUROS_ITEMS = ['ART','Seguro de vida','Resp. civil','Seguro de equipo','Seg. cancelación'];
+const PROV_ICONOS = {'Sonido':'🔊','Iluminación':'💡','Catering':'🍽','Fotografía':'📸','Video':'🎬','Decoración':'🌸','DJ':'🎵','Logística':'🚚'};
+const ESTADO_STYLES = {'Pendiente':'background:rgba(224,124,43,.12);color:#e07c2b','Enviado':'background:rgba(0,119,168,.12);color:#0077a8','Aprobado':'background:rgba(26,158,92,.12);color:#1a9e5c','Rechazado':'background:rgba(192,57,43,.12);color:#c0392b'};
+
+function renderProveedoresHTML(ev) {
+  return (ev.proveedores||[]).map((p,i) => {
+    const seguros = p.seguros || {};
+    const estStyle = ESTADO_STYLES[p.estado] || ESTADO_STYLES['Pendiente'];
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+        <div style="width:34px;height:34px;background:var(--brand-dim);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${PROV_ICONOS[p.servicio]||'🤝'}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">${p.nombre}</div>
+          <div style="font-size:12px;color:var(--text2);">${p.servicio}${p.contacto?' · '+p.contacto:''}</div>
+        </div>
+        <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;${estStyle}">${p.estado||'Pendiente'}</span>
+        <select class="filter-select" style="font-size:11px;padding:4px 7px;" onchange="changeProvEstado(${i},this.value)">
+          <option ${p.estado==='Pendiente'?'selected':''}>Pendiente</option>
+          <option ${p.estado==='Enviado'?'selected':''}>Enviado</option>
+          <option ${p.estado==='Aprobado'?'selected':''}>Aprobado</option>
+          <option ${p.estado==='Rechazado'?'selected':''}>Rechazado</option>
+        </select>
+        <button class="btn btn-red btn-sm" onclick="removeProveedor(${i})" style="margin-left:4px;">✕</button>
+      </div>
+      <div style="background:var(--surface2);border-top:1px solid var(--border);padding:10px 14px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px;">🛡 Seguros</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          ${SEGUROS_ITEMS.map(seg => `
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:${seguros[seg]?'var(--green)':'var(--text2)'};font-weight:${seguros[seg]?'600':'400'};">
+              <input type="checkbox" ${seguros[seg]?'checked':''} onchange="toggleSeguro(${i},'${seg}',this.checked)" style="accent-color:var(--brand);width:14px;height:14px;">
+              ${seg}
+            </label>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<p style="color:var(--text3);font-size:13px;padding:8px 0;">Sin proveedores asignados aún</p>';
+}
+
+function renderProveedores(ev) {
+  const el = document.getElementById('proveedores-list');
+  if (el) el.innerHTML = renderProveedoresHTML(ev);
+}
+
+async function addProveedor() {
+  const nombre = document.getElementById('prov-nombre').value.trim(); if (!nombre) return;
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.proveedores = ev.proveedores || [];
+  ev.proveedores.push({
+    nombre,
+    servicio: document.getElementById('prov-servicio').value.trim(),
+    contacto: document.getElementById('prov-contacto').value.trim(),
+    estado: document.getElementById('prov-estado').value || 'Pendiente',
+    seguros: {}
+  });
+  ['prov-nombre','prov-servicio','prov-contacto'].forEach(id => document.getElementById(id).value='');
+  await saveEventDB(ev); renderProveedores(ev);
+}
+
+async function changeProvEstado(i, val) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.proveedores[i].estado = val;
+  await saveEventDB(ev); renderProveedores(ev);
+}
+
+async function toggleSeguro(i, seg, val) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.proveedores[i].seguros = ev.proveedores[i].seguros || {};
+  ev.proveedores[i].seguros[seg] = val;
+  await saveEventDB(ev); renderProveedores(ev);
+}
+
+async function removeProveedor(i) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  ev.proveedores.splice(i,1);
+  await saveEventDB(ev); renderProveedores(ev);
+}
+
+// ═══════════════════════════════════════════
+//  SHARE
+// ═══════════════════════════════════════════
+function openShareModal() {
+  const ev = eventsData.find(e => e.id === currentEventId); if (!ev) return;
+  const sections = [
+    { id:'general', label:'📋 General', desc:'Descripción y notas internas' },
+    { id:'checklist', label:'✅ Checklist', desc:'Lista de tareas' },
+    { id:'crono-interno', label:'🗓 Cronograma Interno', desc:'Para el equipo' },
+    { id:'crono-cliente', label:'📤 Cronograma Cliente', desc:'Para enviar al cliente' },
+    { id:'proveedores', label:'🤝 Proveedores', desc:'Proveedores contratados' },
+    ...(ev.sheets||[]).map(s => ({ id:s.id, label:s.label, desc:'Hoja de notas libre' }))
+  ];
+  document.getElementById('share-sections-list').innerHTML = sections.map(s => `
+    <div class="share-section-item" onclick="toggleShareSection(this)">
+      <input type="checkbox" name="share-sec" value="${s.id}" onclick="event.stopPropagation()">
+      <div><div class="share-section-label">${s.label}</div><div class="share-section-desc">${s.desc}</div></div>
+    </div>`).join('');
+  document.getElementById('share-modal').classList.add('open');
+}
+
+function toggleShareSection(el) {
+  el.classList.toggle('selected');
+  el.querySelector('input[type=checkbox]').checked = el.classList.contains('selected');
+}
+
+function generateShareDoc() {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  const sel = [...document.querySelectorAll('input[name="share-sec"]:checked')].map(c=>c.value);
+  if (!sel.length) { toast('Seleccioná al menos una sección','err'); return; }
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Georgia,serif;padding:48px;color:#0d1f2d;max-width:800px;margin:0 auto;line-height:1.7}h1{color:#00b4d8;font-size:28px;border-bottom:2px solid #00b4d8;padding-bottom:12px;margin-bottom:4px}h2{color:#0077a8;font-size:18px;margin-top:30px;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #cce8f5}h3{color:#00b4d8;font-size:13px;margin:0 0 4px;font-weight:600}.meta{color:#7aaabb;font-size:13px;margin-bottom:30px}table{width:100%;border-collapse:collapse;margin:10px 0}th{background:#f4fafd;padding:9px 12px;text-align:left;border-bottom:2px solid #cce8f5;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-family:Arial}td{padding:9px 12px;border-bottom:1px solid #e6f4fb;font-size:14px}.check-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f8fd}.check-done{text-decoration:line-through;color:#aaa}.prov-item{padding:7px 0;border-bottom:1px solid #f0f8fd}.notes-box{background:#f4fafd;border:1px solid #cce8f5;border-radius:8px;padding:14px;white-space:pre-wrap;font-size:14px;line-height:1.8}</style></head><body>
+  <h1>Gira Eventos</h1><div class="meta">${ev.empresa?'🏢 '+ev.empresa+' · ':''}${ev.fecha?'📅 '+formatDate(ev.fecha)+' · ':''}${ev.nombre}</div>`;
+  if (sel.includes('general') && (ev.descripcion||ev.notas)) {
+    html += `<h2>📋 General</h2>`;
+    if (ev.descripcion) html += `<p>${ev.descripcion}</p>`;
+    if (ev.notas) html += `<h3 style="margin-top:14px;">Notas internas</h3><p>${ev.notas}</p>`;
+  }
+  if (sel.includes('checklist') && (ev.checklist||[]).length) {
+    html += `<h2>✅ Checklist</h2>`;
+    ev.checklist.forEach(c => { html += `<div class="check-item"><span>${c.done?'☑':'☐'}</span><span class="${c.done?'check-done':''}">${c.texto}</span>${c.persona?`<span style="color:#7aaabb;font-size:12px;margin-left:auto">👤 ${c.persona}</span>`:''}</div>`; });
+  }
+  if (sel.includes('crono-interno') && (ev.cronoInterno||[]).length) {
+    html += `<h2>🗓 Cronograma Interno</h2><table><thead><tr><th>Día</th><th>Horario</th><th>Asunto</th><th>Notas</th></tr></thead><tbody>`;
+    ev.cronoInterno.forEach(r => { html += `<tr><td>${formatDate(r.dia)}</td><td>${r.hora}</td><td>${r.asunto}</td><td>${r.notas||''}</td></tr>`; });
+    html += `</tbody></table>`;
+  }
+  if (sel.includes('crono-cliente') && (ev.cronoCliente||[]).length) {
+    html += `<h2>📤 Cronograma</h2><table><thead><tr><th>Día</th><th>Horario</th><th>Asunto</th></tr></thead><tbody>`;
+    ev.cronoCliente.forEach(r => { html += `<tr><td>${formatDate(r.dia)}</td><td>${r.hora}</td><td>${r.asunto}</td></tr>`; });
+    html += `</tbody></table>`;
+  }
+  if (sel.includes('proveedores') && (ev.proveedores||[]).length) {
+    html += `<h2>🤝 Proveedores</h2>`;
+    ev.proveedores.forEach(p => { html += `<div class="prov-item"><strong>${p.nombre}</strong> — ${p.servicio}${p.contacto?' · '+p.contacto:''}</div>`; });
+  }
+  (ev.sheets||[]).forEach(s => {
+    if (sel.includes(s.id) && s.content) html += `<h2>${s.label}</h2><div class="notes-box">${s.content}</div>`;
+  });
+  html += `</body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download = `${ev.nombre.replace(/ /g,'_')}_compartido.html`;
+  a.click();
+  closeModal('share-modal');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+async function init() {
+  await loadCRM();
+  updateDatalist();
+  await loadPersonalTasks();
+}
+
+
+// ── TAREAS PERSONALES ──
+let personalTasks = {ani:[], cori:[]};
+
+async function loadPersonalTasks() {
+  try {
+    const data = await sbFetch('gira_tareas_personales?limit=1');
+    if (data && data[0]) personalTasks = data[0].data || {ani:[], cori:[]};
+  } catch(e) {}
+  renderPersonalTasks();
+}
+
+async function savePersonalTasksDB() {
+  try {
+    const existing = await sbFetch('gira_tareas_personales?limit=1');
+    if (existing && existing.length > 0) {
+      await sbFetch('gira_tareas_personales?id=eq.'+existing[0].id, {method:'PATCH', prefer:'return=minimal', body:{data:personalTasks}});
+    } else {
+      await sbFetch('gira_tareas_personales', {method:'POST', body:{data:personalTasks}});
+    }
+  } catch(e) {}
+}
+
+function renderPersonalTasks() {
+  ['ani','cori'].forEach(p => {
+    const tasks = personalTasks[p] || [];
+    const done = tasks.filter(t=>t.done).length;
+    const countEl = document.getElementById(p+'-count');
+    const listEl = document.getElementById(p+'-tasks');
+    if (countEl) countEl.textContent = done + '/' + tasks.length + ' completadas';
+    if (listEl) listEl.innerHTML = tasks.map((t,i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);">
+        <input type="checkbox" ${t.done?'checked':''} onchange="togglePersonalTask('${p}',${i})" style="accent-color:var(--brand);width:14px;height:14px;flex-shrink:0;">
+        <span style="flex:1;font-size:13px;${t.done?'text-decoration:line-through;color:var(--text3);':''}">${t.texto}</span>
+        <button class="btn btn-red btn-sm" onclick="removePersonalTask('${p}',${i})" style="padding:2px 7px;font-size:11px;">✕</button>
+      </div>`).join('') || '<p style="color:var(--text3);font-size:13px;padding:8px 0;">Sin tareas aún</p>';
+  });
+}
+
+async function addPersonalTask(persona) {
+  const inp = document.getElementById(persona+'-new-task');
+  const texto = inp.value.trim(); if (!texto) return;
+  personalTasks[persona] = personalTasks[persona] || [];
+  personalTasks[persona].push({texto, done:false});
+  inp.value = '';
+  await savePersonalTasksDB(); renderPersonalTasks();
+}
+
+async function togglePersonalTask(persona, i) {
+  personalTasks[persona][i].done = !personalTasks[persona][i].done;
+  await savePersonalTasksDB(); renderPersonalTasks();
+}
+
+async function removePersonalTask(persona, i) {
+  personalTasks[persona].splice(i,1);
+  await savePersonalTasksDB(); renderPersonalTasks();
+}
+
+// ── LOCACIONES ──
+let locData = [];
+let editingLocId = null;
+
+async function loadLocaciones() {
+  try {
+    const data = await sbFetch('gira_locaciones?order=nombre.asc&limit=500');
+    locData = data || [];
+  } catch(e) { locData = []; }
+  renderLocaciones();
+}
+
+async function saveLocDB(obj) {
+  try {
+    setSyncStatus('syncing', 'Guardando...');
+    if (editingLocId !== null) {
+      await sbFetch('gira_locaciones?id=eq.'+editingLocId, {method:'PATCH', prefer:'return=minimal', body:obj});
+      const idx = locData.findIndex(l=>l.id===editingLocId);
+      if (idx>=0) locData[idx] = {...obj, id:editingLocId};
+    } else {
+      const r = await sbFetch('gira_locaciones', {method:'POST', body:obj});
+      if (r && r[0]) locData.push(r[0]);
+    }
+    setSyncStatus('ok','Guardado ✓'); toast('Locación guardada','ok');
+  } catch(e) { setSyncStatus('error','Error'); toast('Error al guardar locación','err'); }
+}
+
+function renderLocaciones() {
+  const qEl = document.getElementById('loc-search');
+  const ftEl = document.getElementById('f-loc-tipo');
+  const fzEl = document.getElementById('f-loc-zona');
+  if (!qEl) return;
+  const q = qEl.value.toLowerCase();
+  const ft = ftEl ? ftEl.value : '';
+  const fz = fzEl ? fzEl.value : '';
+  const list = locData.filter(l =>
+    (!q || (l.nombre||'').toLowerCase().includes(q) || (l.direccion||'').toLowerCase().includes(q)) &&
+    (!ft || l.tipo===ft) && (!fz || l.zona===fz)
+  );
+  const grid = document.getElementById('loc-grid');
+  if (!grid) return;
+  if (!list.length) { grid.innerHTML='<p style="color:var(--text3);grid-column:1/-1;padding:40px 0;text-align:center;font-size:14px;">No hay locaciones aún. ¡Agregá la primera!</p>'; return; }
+  grid.innerHTML = list.map(l => {
+    const evVinc = eventsData.filter(e => e.empresa && l.nombre && (e.empresa.toLowerCase().includes(l.nombre.toLowerCase().split(' ')[0]))).length;
+    const tags = l.servicios ? l.servicios.split(',').map(s=>`<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">${s.trim()}</span>`).join('') : '';
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;position:relative;" onmouseover="this.style.borderColor='var(--brand)';this.style.boxShadow='0 4px 16px rgba(0,180,216,.12)';this.style.transform='translateY(-1px)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='';this.style.transform=''" onclick="openEditLocModal(${l.id})">
+      <div style="position:absolute;top:12px;right:12px;background:${evVinc?'var(--brand-dim)':'rgba(0,0,0,.04)'};color:${evVinc?'var(--brand)':'var(--text3)'};font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;border:1px solid ${evVinc?'var(--brand-dim)':'var(--border)'};">🎭 ${evVinc} evento${evVinc!==1?'s':''}</div>
+      <div style="font-size:11px;color:var(--brand);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600;">${l.tipo||'Sin tipo'}</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;padding-right:80px;">${l.nombre}</div>
+      ${l.zona ? `<div style="font-size:12px;color:var(--text2);margin-bottom:3px;">📍 ${l.zona}${l.direccion?' · '+l.direccion:''}</div>` : ''}
+      ${l.capacidad ? `<div style="font-size:12px;color:var(--text2);margin-bottom:3px;">👥 Hasta ${l.capacidad} personas</div>` : ''}
+      ${l.contacto ? `<div style="font-size:12px;color:var(--text2);margin-bottom:3px;">👤 ${l.contacto}${l.telefono?' · '+l.telefono:''}</div>` : ''}
+      ${tags ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;">${tags}</div>` : ''}
+      ${l.notas ? `<div style="font-size:12px;color:var(--text3);margin-top:8px;font-style:italic;">${l.notas.substring(0,80)}${l.notas.length>80?'...':''}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function openAddLocModal() {
+  editingLocId = null;
+  document.getElementById('loc-modal-title').textContent = 'Nueva Locación';
+  ['loc-nombre','loc-direccion','loc-contacto','loc-telefono','loc-email','loc-servicios','loc-notas'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('loc-tipo').value=''; document.getElementById('loc-zona').value=''; document.getElementById('loc-capacidad').value='';
+  document.getElementById('loc-modal').classList.add('open');
+}
+
+function openEditLocModal(id) {
+  const l = locData.find(x=>x.id===id); if (!l) return;
+  editingLocId = id;
+  document.getElementById('loc-modal-title').textContent = 'Editar Locación';
+  document.getElementById('loc-nombre').value=l.nombre||''; document.getElementById('loc-tipo').value=l.tipo||'';
+  document.getElementById('loc-zona').value=l.zona||''; document.getElementById('loc-direccion').value=l.direccion||'';
+  document.getElementById('loc-capacidad').value=l.capacidad||''; document.getElementById('loc-contacto').value=l.contacto||'';
+  document.getElementById('loc-telefono').value=l.telefono||''; document.getElementById('loc-email').value=l.email||'';
+  document.getElementById('loc-servicios').value=l.servicios||''; document.getElementById('loc-notas').value=l.notas||'';
+  document.getElementById('loc-modal').classList.add('open');
+}
+
+async function saveLocacion() {
+  const nombre = document.getElementById('loc-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio','err'); return; }
+  const obj = {
+    nombre, tipo:document.getElementById('loc-tipo').value, zona:document.getElementById('loc-zona').value,
+    direccion:document.getElementById('loc-direccion').value.trim(),
+    capacidad:parseInt(document.getElementById('loc-capacidad').value)||null,
+    contacto:document.getElementById('loc-contacto').value.trim(), telefono:document.getElementById('loc-telefono').value.trim(),
+    email:document.getElementById('loc-email').value.trim(), servicios:document.getElementById('loc-servicios').value.trim(),
+    notas:document.getElementById('loc-notas').value.trim()
+  };
+  await saveLocDB(obj); closeModal('loc-modal'); renderLocaciones();
+}
+
+init();
+</script>
+</body>
+</html>
