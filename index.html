@@ -298,6 +298,19 @@
   ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
   ::-webkit-scrollbar-thumb:hover { background:var(--text3); }
 
+  /* CALENDARIO */
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+  .cal-header-cell { background:var(--surface2); padding:9px 0; text-align:center; font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border); }
+  .cal-day { min-height:100px; padding:6px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); vertical-align:top; position:relative; background:#fff; transition:background .15s; }
+  .cal-day:nth-child(7n) { border-right:none; }
+  .cal-day.other-month { background:var(--surface2); }
+  .cal-day.today .cal-day-num { background:var(--brand); color:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+  .cal-day-num { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:4px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+  .cal-event-pill { font-size:10px; border-radius:4px; padding:2px 6px; margin-bottom:2px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.5; font-weight:500; transition:opacity .15s; }
+  .cal-event-pill:hover { opacity:.8; }
+  .cal-more { font-size:10px; color:var(--text3); padding:1px 4px; cursor:pointer; }
+  .cal-last-row { border-bottom:none; }
+
   @media(max-width:900px) {
     .tareas-board { grid-template-columns:1fr; }
     .locaciones-grid { grid-template-columns:1fr; }
@@ -324,6 +337,7 @@
     <button onclick="showSection(event,'eventos')">🎭 Organización de Eventos</button>
     <button onclick="showSection(event,'tareas')">✅ Tareas</button>
     <button onclick="showSection(event,'locaciones')">📍 Locaciones</button>
+    <button onclick="showSection(event,'calendario')">📅 Calendario</button>
   </nav>
   <div class="sync-badge">
     <div class="sync-dot" id="sync-dot"></div>
@@ -455,6 +469,24 @@
       <!-- renderizado por JS -->
     </div>
   </section>
+
+  <!-- CALENDARIO -->
+  <section id="calendario" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div>
+        <div class="page-title">Calendario de Eventos</div>
+        <div class="page-sub">Eventos confirmados y en producción · vista mensual</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-outline" onclick="calPrev()">‹ Anterior</button>
+        <span id="cal-month-label" style="font-weight:600;font-size:15px;color:var(--text);min-width:160px;text-align:center;"></span>
+        <button class="btn btn-outline" onclick="calNext()">Siguiente ›</button>
+        <button class="btn btn-brand btn-sm" onclick="calGoToday()">Hoy</button>
+      </div>
+    </div>
+    <div id="cal-legend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;"></div>
+    <div id="calendario-grid" style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;"></div>
+  </section>
 </main>
 
 <!-- TOAST -->
@@ -506,7 +538,32 @@
     <div class="form-grid">
       <div class="form-group form-full"><label class="form-label">Nombre del evento *</label><input type="text" class="form-input" id="ne-nombre" placeholder="Ej: Fiesta fin de año BGH"></div>
       <div class="form-group"><label class="form-label">Empresa cliente</label><input type="text" class="form-input" id="ne-empresa" placeholder="Nombre de la empresa" list="empresas-list"><datalist id="empresas-list"></datalist></div>
-      <div class="form-group"><label class="form-label">Fecha del evento</label><input type="date" class="form-input" id="ne-fecha"></div>
+      <div class="form-group"><label class="form-label">Tipo de evento</label>
+        <select class="form-select-input" id="ne-tipo">
+          <option value="">Seleccioná el tipo...</option>
+          <option>🎉 Fiesta fin de año</option>
+          <option>🏆 Premiación</option>
+          <option>🤝 Team building</option>
+          <option>🎓 Capacitación</option>
+          <option>👨‍💼 Reunión corporativa</option>
+          <option>🍽 Cena de gala</option>
+          <option>🎤 Conferencia / Congreso</option>
+          <option>🚀 Lanzamiento de producto</option>
+          <option>🏃 Jornada deportiva</option>
+          <option>👨‍👩‍👧 Family day</option>
+          <option>🎪 Feria / Expo</option>
+          <option>🎨 Evento cultural</option>
+          <option>💡 Workshop / Taller</option>
+          <option>🥂 Cocktail / Brindis</option>
+          <option>🎭 Show / Espectáculo</option>
+          <option>🌿 Retiro corporativo</option>
+          <option>📸 Producción fotográfica</option>
+          <option>🎊 Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Cantidad de personas</label><input type="number" class="form-input" id="ne-personas" placeholder="Ej: 150" min="1"></div>
+      <div class="form-group"><label class="form-label">Fecha inicio del evento</label><input type="date" class="form-input" id="ne-fecha"></div>
+      <div class="form-group"><label class="form-label">Fecha fin / desarmado</label><input type="date" class="form-input" id="ne-fecha-fin"></div>
       <div class="form-group form-full"><label class="form-label">Estado inicial</label>
         <select class="form-select-input" id="ne-estado">
           <option value="consulta">📥 Consulta recibida</option>
@@ -912,6 +969,7 @@ function showSection(evt, id) {
   if (id === 'eventos') { loadEvents().then(renderKanban); startAutoRefresh(); }
   else if (id === 'tareas') { loadTareas().then(renderTareas); loadEvents(); }
   else if (id === 'locaciones') { loadLocaciones().then(renderLocaciones); loadEvents(); }
+  else if (id === 'calendario') { loadEvents().then(renderCalendario); }
   else stopAutoRefresh();
 }
 
@@ -1105,7 +1163,9 @@ function formatDate(d) {
 
 function openNewEventModal() {
   ['ne-nombre','ne-empresa','ne-desc'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('ne-fecha').value = '';
+  ['ne-fecha','ne-fecha-fin'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const neTipo = document.getElementById('ne-tipo'); if(neTipo) neTipo.value='';
+  const nePer = document.getElementById('ne-personas'); if(nePer) nePer.value='';
   document.getElementById('ne-estado').value = 'consulta';
   document.getElementById('new-event-modal').classList.add('open');
 }
@@ -1117,10 +1177,13 @@ async function saveNewEvent() {
   const ev = {
     nombre, empresa: document.getElementById('ne-empresa').value.trim(),
     fecha: document.getElementById('ne-fecha').value || null,
+    fecha_desarmado: document.getElementById('ne-fecha-fin')?.value || null,
+    tipo: document.getElementById('ne-tipo')?.value || '',
+    personas: document.getElementById('ne-personas')?.value || null,
     estado: document.getElementById('ne-estado').value,
     descripcion: document.getElementById('ne-desc').value.trim(),
     notas:'', checklist:[], cronoInterno:[], cronoCliente:[], proveedores:[], sheets:[],
-    archivos:[], personas:null, tipo:'', fecha_armado:null, fecha_desarmado:null,
+    archivos:[], fecha_armado:null,
     armado:'', menu:'', menu_especial:'', equipamiento:'', ambientacion:''
   };
   await saveEventDB(ev);
@@ -1155,7 +1218,6 @@ const BUILTIN_SHEETS = [
   { id:'proveedores',   label:'🤝 Proveedores',      type:'proveedores' },
   { id:'armado',        label:'🔧 Armado',           type:'armado' },
   { id:'menu',          label:'🍽 Menú',             type:'menu' },
-  { id:'menu-especial', label:'🥗 Menú especial',    type:'menu-especial' },
   { id:'equipamiento',  label:'🎤 Equip. Técnico',   type:'equipamiento' },
   { id:'ambientacion',  label:'🌸 Ambientación',     type:'ambientacion' },
   { id:'archivos',      label:'📁 Archivos',         type:'archivos' },
@@ -1227,9 +1289,31 @@ function renderSheetContent(sheet, ev, sheetIdx) {
   if (sheet.type === 'general') return `
     <div class="info-grid">
       <div class="info-field"><label>Cantidad de personas</label><input type="number" id="ed-personas" value="${ev.personas||''}" placeholder="Ej: 150" onchange="autosaveEvent()"></div>
-      <div class="info-field"><label>Tipo de evento</label><input type="text" id="ed-tipo" value="${ev.tipo||''}" placeholder="Ej: Cena de gala, Team building..." onchange="autosaveEvent()"></div>
-      <div class="info-field"><label>Fecha de armado</label><input type="date" id="ed-fecha-armado" value="${ev.fecha_armado||''}" onchange="autosaveEvent()"></div>
-      <div class="info-field"><label>Fecha de desarmado</label><input type="date" id="ed-fecha-desarmado" value="${ev.fecha_desarmado||''}" onchange="autosaveEvent()"></div>
+      <div class="info-field"><label>Tipo de evento</label>
+        <select id="ed-tipo" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;width:100%;" onchange="autosaveEvent()">
+          <option value="">Seleccioná...</option>
+          <option ${ev.tipo==='🎉 Fiesta fin de año'?'selected':''}>🎉 Fiesta fin de año</option>
+          <option ${ev.tipo==='🏆 Premiación'?'selected':''}>🏆 Premiación</option>
+          <option ${ev.tipo==='🤝 Team building'?'selected':''}>🤝 Team building</option>
+          <option ${ev.tipo==='🎓 Capacitación'?'selected':''}>🎓 Capacitación</option>
+          <option ${ev.tipo==='👨‍💼 Reunión corporativa'?'selected':''}>👨‍💼 Reunión corporativa</option>
+          <option ${ev.tipo==='🍽 Cena de gala'?'selected':''}>🍽 Cena de gala</option>
+          <option ${ev.tipo==='🎤 Conferencia / Congreso'?'selected':''}>🎤 Conferencia / Congreso</option>
+          <option ${ev.tipo==='🚀 Lanzamiento de producto'?'selected':''}>🚀 Lanzamiento de producto</option>
+          <option ${ev.tipo==='🏃 Jornada deportiva'?'selected':''}>🏃 Jornada deportiva</option>
+          <option ${ev.tipo==='👨‍👩‍👧 Family day'?'selected':''}>👨‍👩‍👧 Family day</option>
+          <option ${ev.tipo==='🎪 Feria / Expo'?'selected':''}>🎪 Feria / Expo</option>
+          <option ${ev.tipo==='🎨 Evento cultural'?'selected':''}>🎨 Evento cultural</option>
+          <option ${ev.tipo==='💡 Workshop / Taller'?'selected':''}>💡 Workshop / Taller</option>
+          <option ${ev.tipo==='🥂 Cocktail / Brindis'?'selected':''}>🥂 Cocktail / Brindis</option>
+          <option ${ev.tipo==='🎭 Show / Espectáculo'?'selected':''}>🎭 Show / Espectáculo</option>
+          <option ${ev.tipo==='🌿 Retiro corporativo'?'selected':''}>🌿 Retiro corporativo</option>
+          <option ${ev.tipo==='📸 Producción fotográfica'?'selected':''}>📸 Producción fotográfica</option>
+          <option ${ev.tipo==='🎊 Otro'?'selected':''}>🎊 Otro</option>
+        </select>
+      </div>
+      <div class="info-field"><label>Fecha inicio</label><input type="date" id="ed-fecha-armado" value="${ev.fecha_armado||''}" onchange="autosaveEvent()"></div>
+      <div class="info-field"><label>Fecha fin / desarmado</label><input type="date" id="ed-fecha-desarmado" value="${ev.fecha_desarmado||''}" onchange="autosaveEvent()"></div>
     </div>
     <div class="section-label">Descripción</div>
     <textarea class="notas-area" id="ed-desc" placeholder="Descripción y detalles del evento..." oninput="autosaveEvent()">${ev.descripcion||''}</textarea>
@@ -1307,16 +1391,20 @@ function renderSheetContent(sheet, ev, sheetIdx) {
       oninput="saveBuiltinFreeSheet('armado',this.value)">${ev.armado||''}</textarea>`;
 
   if (sheet.type === 'menu') return `
-    <div class="section-label">Menú</div>
-    <textarea class="notas-area" style="min-height:300px;font-size:14px;line-height:1.9;"
-      placeholder="Detalle del menú: entrada, principal, postre, bebidas..."
-      oninput="saveBuiltinFreeSheet('menu',this.value)">${ev.menu||''}</textarea>`;
-
-  if (sheet.type === 'menu-especial') return `
-    <div class="section-label">Menú especial (celíaco, vegetariano, kosher, etc.)</div>
-    <textarea class="notas-area" style="min-height:300px;font-size:14px;line-height:1.9;"
-      placeholder="Detalle de menús especiales y cantidad de comensales por tipo..."
-      oninput="saveBuiltinFreeSheet('menu_especial',this.value)">${ev.menu_especial||''}</textarea>`;
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div class="section-label" style="margin-top:0;">Menú general</div>
+        <textarea class="notas-area" style="min-height:340px;font-size:14px;line-height:1.9;resize:vertical;"
+          placeholder="Entrada, principal, postre, bebidas, snacks..."
+          oninput="saveBuiltinFreeSheet('menu',this.value)">${ev.menu||''}</textarea>
+      </div>
+      <div>
+        <div class="section-label" style="margin-top:0;">Menú especial <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0;">(celíaco, vegano, kosher, diabético…)</span></div>
+        <textarea class="notas-area" style="min-height:340px;font-size:14px;line-height:1.9;resize:vertical;"
+          placeholder="Tipo · Cantidad de comensales&#10;Ej: Vegano · 3 personas&#10;Ej: Celíaco · 5 personas"
+          oninput="saveBuiltinFreeSheet('menu_especial',this.value)">${ev.menu_especial||''}</textarea>
+      </div>
+    </div>`;
 
   if (sheet.type === 'equipamiento') return `
     <div class="section-label">Equipamiento técnico</div>
@@ -1623,8 +1711,7 @@ function openShareModal() {
     { id:'crono-cliente', label:'📤 Cronograma Cliente', desc:'Para enviar al cliente' },
     { id:'proveedores', label:'🤝 Proveedores', desc:'Proveedores contratados' },
     { id:'armado', label:'🔧 Armado', desc:'Plan de armado' },
-    { id:'menu', label:'🍽 Menú', desc:'Detalle del menú' },
-    { id:'menu-especial', label:'🥗 Menú especial', desc:'Menús especiales' },
+    { id:'menu', label:'🍽 Menú', desc:'Menú general y especiales' },
     { id:'equipamiento', label:'🎤 Equipamiento técnico', desc:'Sonido, iluminación, etc.' },
     { id:'ambientacion', label:'🌸 Ambientación', desc:'Decoración y temática' },
     ...(ev.sheets||[]).map(s => ({ id:s.id, label:s.label, desc:'Hoja de notas libre' }))
@@ -1684,8 +1771,7 @@ function generateShareDoc() {
   }
   const freeSections = [
     {id:'armado',label:'🔧 Armado',field:'armado'},
-    {id:'menu',label:'🍽 Menú',field:'menu'},
-    {id:'menu-especial',label:'🥗 Menú especial',field:'menu_especial'},
+    {id:'menu',label:'🍽 Menú completo',field:'menu'},
     {id:'equipamiento',label:'🎤 Equipamiento técnico',field:'equipamiento'},
     {id:'ambientacion',label:'🌸 Ambientación',field:'ambientacion'},
   ];
@@ -1923,6 +2009,137 @@ function renderLocaciones() {
 
 // ═══════════════════════════════════════════
 //  INIT
+
+// ═══════════════════════════════════════════
+//  CALENDARIO
+// ═══════════════════════════════════════════
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+
+const CAL_COLORS = [
+  { bg:'#e8f7fd', text:'#0077a8', border:'#00b4d8' },
+  { bg:'#eef4ff', text:'#5b4fcf', border:'#7c70ef' },
+  { bg:'#edfbf4', text:'#1a7a4a', border:'#1a9e5c' },
+  { bg:'#fff4ec', text:'#b05a10', border:'#e07c2b' },
+  { bg:'#fef2f2', text:'#991b1b', border:'#c0392b' },
+  { bg:'#fdf4ff', text:'#7e22ce', border:'#9333ea' },
+  { bg:'#fffbeb', text:'#92400e', border:'#d97706' },
+  { bg:'#f0fdf4', text:'#14532d', border:'#22c55e' },
+];
+
+// Assign a stable color per event id
+const _colorCache = {};
+function getEventColor(id) {
+  if (!_colorCache[id]) {
+    const idx = Object.keys(_colorCache).length % CAL_COLORS.length;
+    _colorCache[id] = CAL_COLORS[idx];
+  }
+  return _colorCache[id];
+}
+
+function calGoToday() { calYear = new Date().getFullYear(); calMonth = new Date().getMonth(); renderCalendario(); }
+function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendario(); }
+function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendario(); }
+
+function renderCalendario() {
+  const lbl = document.getElementById('cal-month-label');
+  const grid = document.getElementById('calendario-grid');
+  const legend = document.getElementById('cal-legend');
+  if (!lbl || !grid) return;
+
+  const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  lbl.textContent = MONTHS[calMonth] + ' ' + calYear;
+
+  // Filter events with dates (all states except ejecutado shown, highlight confirmados)
+  const shown = eventsData.filter(e => e.fecha);
+
+  // Build date → events map
+  const dateMap = {};
+  shown.forEach(ev => {
+    const start = ev.fecha;
+    const end = ev.fecha_desarmado || ev.fecha;
+    // Expand range
+    let cur = new Date(start + 'T12:00:00');
+    const endD = new Date(end + 'T12:00:00');
+    while (cur <= endD) {
+      const key = cur.toISOString().split('T')[0];
+      if (!dateMap[key]) dateMap[key] = [];
+      dateMap[key].push(ev);
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
+
+  // Calendar grid
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+
+  let html = '<div class="cal-grid">';
+  // Day headers
+  DAYS.forEach(d => { html += `<div class="cal-header-cell">${d}</div>`; });
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    const prevDate = new Date(calYear, calMonth, -firstDay + i + 1);
+    html += `<div class="cal-day other-month"><div class="cal-day-num" style="color:var(--text3)">${prevDate.getDate()}</div></div>`;
+  }
+
+  // Days of month
+  const totalCells = firstDay + daysInMonth;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isToday = dateStr === today;
+    const dayEvents = dateMap[dateStr] || [];
+    const isLastRow = (firstDay + d - 1) >= totalCells - 7;
+
+    html += `<div class="cal-day${isToday?' today':''}${isLastRow?' cal-last-row':''}">`;
+    html += `<div class="cal-day-num">${d}</div>`;
+
+    const maxShow = 3;
+    dayEvents.slice(0, maxShow).forEach(ev => {
+      const col = getEventColor(ev.id);
+      const isConfirmed = ev.estado === 'confirmado' || ev.estado === 'en-produccion';
+      const opacity = isConfirmed ? '1' : '0.65';
+      html += `<div class="cal-event-pill" style="background:${col.bg};color:${col.text};border-left:3px solid ${col.border};opacity:${opacity};"
+        onclick="openEventDetail(${ev.id})" title="${ev.nombre}${ev.empresa?' · '+ev.empresa:''}">
+        ${ev.nombre}
+      </div>`;
+    });
+    if (dayEvents.length > maxShow) {
+      html += `<div class="cal-more">+${dayEvents.length - maxShow} más</div>`;
+    }
+    html += '</div>';
+  }
+
+  // Fill remaining cells
+  const remaining = 7 - ((firstDay + daysInMonth) % 7);
+  if (remaining < 7) {
+    for (let d = 1; d <= remaining; d++) {
+      html += `<div class="cal-day other-month cal-last-row"><div class="cal-day-num" style="color:var(--text3)">${d}</div></div>`;
+    }
+  }
+  html += '</div>';
+  grid.innerHTML = html;
+
+  // Legend
+  const legendEvents = shown.filter(e => {
+    const start = new Date(e.fecha + 'T12:00:00');
+    const end = new Date((e.fecha_desarmado || e.fecha) + 'T12:00:00');
+    const monthStart = new Date(calYear, calMonth, 1);
+    const monthEnd = new Date(calYear, calMonth + 1, 0);
+    return start <= monthEnd && end >= monthStart;
+  });
+  legend.innerHTML = legendEvents.map(ev => {
+    const col = getEventColor(ev.id);
+    return `<div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="openEventDetail(${ev.id})">
+      <div style="width:10px;height:10px;border-radius:2px;background:${col.border};flex-shrink:0;"></div>
+      <span style="font-size:12px;color:var(--text2);">${ev.nombre}${ev.empresa?' · '+ev.empresa:''}</span>
+    </div>`;
+  }).join('');
+  if (!legendEvents.length) legend.innerHTML = '<span style="font-size:12px;color:var(--text3);">No hay eventos este mes</span>';
+}
+
 // ═══════════════════════════════════════════
 async function init() {
   await loadCRM();
