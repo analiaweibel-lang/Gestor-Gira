@@ -1707,17 +1707,23 @@ function downloadCrono(type) {
 
   let tablesHtml = '';
   sortedKeys.forEach(key => {
-    if (isMultiDay && key !== noDayKey) {
+    // Always show day header when there's a real date
+    if (key !== noDayKey) {
       tablesHtml += `<div class="day-header">${dLabel(key)}</div>`;
     }
-    tablesHtml += `<table><thead><tr><th style="width:110px;">Horario</th><th>Actividad</th></tr></thead><tbody>`;
+    tablesHtml += `<table><thead><tr><th style="width:110px;">Horario</th><th>Actividad</th>${notesCol ? '<th style="width:160px;">Notas</th>' : ''}</tr></thead><tbody>`;
     (grouped[key]||[]).forEach(r => {
-      tablesHtml += `<tr><td>${r.hora||''}</td><td>${r.asunto||''}</td></tr>`;
+      tablesHtml += `<tr><td>${r.hora||''}</td><td>${(r.asunto||'').replace(/\n/g,'<br>')}</td>${notesCol ? `<td>${(r.notas||'').replace(/\n/g,'<br>')}</td>` : ''}</tr>`;
     });
     tablesHtml += '</tbody></table>';
   });
 
-  const infoLine = [ev.nombre, ev.empresa, ev.fecha?formatDate(ev.fecha):''].filter(Boolean).join(' · ');
+  const fechaRange = ev.fecha
+    ? (ev.fecha_desarmado && ev.fecha_desarmado !== ev.fecha
+        ? formatDate(ev.fecha) + ' al ' + formatDate(ev.fecha_desarmado)
+        : formatDate(ev.fecha))
+    : '';
+  const infoLine = [ev.nombre, ev.empresa, fechaRange].filter(Boolean).join(' · ');
   const html = `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><title>${label} — ${ev.nombre}</title>
 <style>
@@ -1725,10 +1731,10 @@ function downloadCrono(type) {
 body { font-family: Arial, sans-serif; color: #0d1f2d; max-width: 600px; margin: 0 auto; }
 h1 { color: #00b4d8; font-size: 20px; border-bottom: 2px solid #00b4d8; padding-bottom: 8px; margin-bottom: 4px; }
 .sub { color: #7aaabb; font-size: 12px; margin-bottom: 20px; }
-.day-header { margin: 20px 0 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #00b4d8; border-bottom: 1px solid #cce8f5; padding-bottom: 4px; }
-table { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
+.day-header { margin: 22px 0 6px; font-size: 13px; font-weight: 700; color: #0d1f2d; border-bottom: 2px solid #00b4d8; padding-bottom: 5px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
 th { background: #f4fafd; padding: 7px 10px; text-align: left; border-bottom: 2px solid #cce8f5; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
-td { padding: 8px 10px; border-bottom: 1px solid #e6f4fb; font-size: 13px; word-break: break-word; white-space: normal; }
+td { padding: 8px 10px; border-bottom: 1px solid #e6f4fb; font-size: 13px; word-break: break-word; white-space: pre-wrap; vertical-align: top; }
 tr:last-child td { border-bottom: none; }
 .footer { margin-top: 24px; font-size: 10px; color: #aaa; }
 </style></head><body>
@@ -1882,7 +1888,7 @@ function generateShareDoc() {
   const sel = [...document.querySelectorAll('input[name="share-sec"]:checked')].map(c=>c.value);
   if (!sel.length) { toast('Seleccioná al menos una sección','err'); return; }
   const estLabel = { 'en revision':'En revisión', 'confirmado':'Confirmado', 'rechazado':'Rechazado', 'solicitado':'Solicitado' };
-  let html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+ev.nombre+'</title><style>@page{size:A4 portrait;margin:2cm}body{font-family:Georgia,serif;padding:40px;color:#0d1f2d;line-height:1.7}h1{color:#00b4d8;font-size:26px;border-bottom:2px solid #00b4d8;padding-bottom:12px;margin-bottom:4px}h2{color:#0077a8;font-size:17px;margin-top:28px;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #cce8f5}.meta{color:#7aaabb;font-size:13px;margin-bottom:18px}.info-row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px}.info-box{background:#f4fafd;border:1px solid #cce8f5;border-radius:8px;padding:10px 16px}.ib-label{font-size:10px;color:#7aaabb;text-transform:uppercase;letter-spacing:1px}.ib-val{font-size:14px;font-weight:600}table{width:100%;border-collapse:collapse;margin:10px 0}th{background:#f4fafd;padding:9px 12px;text-align:left;border-bottom:2px solid #cce8f5;font-size:11px;text-transform:uppercase;letter-spacing:1px}td{padding:9px 12px;border-bottom:1px solid #e6f4fb;font-size:14px}.check-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f8fd}.check-done{text-decoration:line-through;color:#aaa}.notes-box{background:#f4fafd;border:1px solid #cce8f5;border-radius:8px;padding:14px;white-space:pre-wrap;font-size:14px;line-height:1.8}</style></head><body>'
+  let html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+ev.nombre+'</title><style>@page{size:A4 portrait;margin:2cm}body{font-family:Georgia,serif;padding:40px;color:#0d1f2d;line-height:1.7}h1{color:#00b4d8;font-size:26px;border-bottom:2px solid #00b4d8;padding-bottom:12px;margin-bottom:4px}h2{color:#0077a8;font-size:17px;margin-top:28px;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #cce8f5}.meta{color:#7aaabb;font-size:13px;margin-bottom:18px}.info-row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px}.info-box{background:#f4fafd;border:1px solid #cce8f5;border-radius:8px;padding:10px 16px}.ib-label{font-size:10px;color:#7aaabb;text-transform:uppercase;letter-spacing:1px}.ib-val{font-size:14px;font-weight:600}table{width:100%;border-collapse:collapse;margin:10px 0}th{background:#f4fafd;padding:9px 12px;text-align:left;border-bottom:2px solid #cce8f5;font-size:11px;text-transform:uppercase;letter-spacing:1px}td{padding:9px 12px;border-bottom:1px solid #e6f4fb;font-size:14px;white-space:pre-wrap;word-break:break-word;vertical-align:top}.check-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f8fd}.check-done{text-decoration:line-through;color:#aaa}.notes-box{background:#f4fafd;border:1px solid #cce8f5;border-radius:8px;padding:14px;white-space:pre-wrap;font-size:14px;line-height:1.8}</style></head><body>'
     + '<h1>Gira Eventos</h1><div class="meta">'+ev.nombre+(ev.empresa?' · 🏢 '+ev.empresa:'')+'</div>';
   if (sel.includes('general')) {
     const boxes = [];
@@ -1892,7 +1898,7 @@ function generateShareDoc() {
     if (ev.fecha_armado) boxes.push({l:'Armado',v:formatDate(ev.fecha_armado)});
     if (ev.fecha_desarmado) boxes.push({l:'Desarmado',v:formatDate(ev.fecha_desarmado)});
     if (boxes.length) html += '<div class="info-row">'+boxes.map(b=>'<div class="info-box"><div class="ib-label">'+b.l+'</div><div class="ib-val">'+b.v+'</div></div>').join('')+'</div>';
-    if (ev.descripcion) html += '<h2>📋 General</h2><p>'+ev.descripcion+'</p>';
+    if (ev.descripcion) html += '<h2>📋 General</h2><p style="white-space:pre-wrap;">'+ev.descripcion+'</p>';
   }
   if (sel.includes('checklist') && (ev.checklist||[]).length) {
     html += '<h2>✅ Checklist</h2>';
@@ -1904,16 +1910,21 @@ function generateShareDoc() {
     const grouped = {};
     items.forEach(r => { const k=r.dia||'__nd__'; if(!grouped[k]) grouped[k]=[]; grouped[k].push(r); });
     const keys = Object.keys(grouped).filter(k=>k!=='__nd__').sort().concat(grouped['__nd__']?['__nd__']:[]);
-    const multi = keys.filter(k=>k!=='__nd__').length > 1;
     const DAYS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const cellStyle='padding:8px 10px;border-bottom:1px solid #e6f4fb;font-size:13px;vertical-align:top;white-space:pre-wrap;word-break:break-word;';
     let h='';
     keys.forEach(k => {
-      if (multi && k!=='__nd__') {
+      if (k!=='__nd__') {
         const d=new Date(k+'T12:00:00');
-        h+='<div style="margin:16px 0 5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#00b4d8;border-bottom:1px solid #cce8f5;padding-bottom:4px;">'+DAYS[d.getDay()]+' '+formatDate(k)+'</div>';
+        h+='<div style="margin:18px 0 5px;font-size:13px;font-weight:700;color:#0d1f2d;border-bottom:2px solid #00b4d8;padding-bottom:5px;">'+DAYS[d.getDay()]+' '+formatDate(k)+'</div>';
       }
-      h+='<table><thead><tr><th style="width:100px;">Horario</th><th>Actividad</th></tr></thead><tbody>';
-      (grouped[k]||[]).forEach(r => { h+='<tr><td>'+(r.hora||'')+'</td><td>'+(r.asunto||'')+'</td></tr>'; });
+      h+='<table style="width:100%;border-collapse:collapse;margin-bottom:4px;"><thead><tr>'
+        +'<th style="width:100px;background:#f4fafd;padding:7px 10px;text-align:left;border-bottom:2px solid #cce8f5;font-size:10px;text-transform:uppercase;">Horario</th>'
+        +'<th style="background:#f4fafd;padding:7px 10px;text-align:left;border-bottom:2px solid #cce8f5;font-size:10px;text-transform:uppercase;">Actividad</th>'
+        +'</tr></thead><tbody>';
+      (grouped[k]||[]).forEach(r => {
+        h+='<tr><td style="'+cellStyle+'">'+(r.hora||'')+'</td><td style="'+cellStyle+'">'+(r.asunto||'')+'</td></tr>';
+      });
       h+='</tbody></table>';
     });
     return h;
