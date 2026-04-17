@@ -212,6 +212,9 @@
   .prov-name { font-size:13px; font-weight:600; }
   .prov-servicio { font-size:12px; color:var(--text2); }
   .prov-desc { font-size:12px; color:var(--text2); margin-top:5px; padding-top:5px; border-top:1px solid var(--border); line-height:1.4; }
+  .prov-desc-edit { width:100%; background:transparent; border:none; border-radius:0; outline:none; font-family:'DM Sans',sans-serif; font-size:12px; color:var(--text2); resize:none; padding:0; line-height:1.5; cursor:text; transition:background .15s, padding .15s; overflow:hidden; }
+  .prov-desc-edit:focus { background:var(--surface3); border-radius:5px; padding:5px 7px; color:var(--text); cursor:text; }
+  .prov-desc-edit::placeholder { color:var(--text3); font-style:italic; }
   .prov-footer { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
   .badge-en-revision { background:rgba(224,124,43,0.12); color:var(--orange); }
   .badge-confirmado-prov { background:rgba(26,158,92,0.12); color:var(--green); }
@@ -1366,18 +1369,21 @@ function renderSheetContent(sheet, ev, sheetIdx) {
         <input type="text" class="form-input" id="prov-servicio" placeholder="Servicio contratado" style="max-width:200px;">
         <input type="text" class="form-input" id="prov-contacto" placeholder="Contacto" style="max-width:160px;">
       </div>
-      <div class="input-row" style="flex-wrap:wrap;gap:7px;">
+      <div class="input-row" style="flex-wrap:wrap;gap:7px;margin-bottom:8px;">
         <select class="form-select-input" id="prov-estado" style="max-width:170px;">
           <option value="en revision">⏳ En revisión</option>
           <option value="confirmado">✅ Confirmado</option>
           <option value="rechazado">❌ Rechazado</option>
           <option value="solicitado">📤 Solicitado</option>
         </select>
-        <input type="text" class="form-input" id="prov-descripcion" placeholder="Descripción / presupuesto...">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);white-space:nowrap;cursor:pointer;">
           <input type="checkbox" id="prov-seguro" style="accent-color:var(--purple);width:15px;height:15px;"> Seguro solicitado
         </label>
         <button class="btn btn-brand btn-sm" onclick="addProveedor()">+ Agregar</button>
+      </div>
+      <div class="form-group" style="margin-top:2px;">
+        <label class="form-label" style="margin-bottom:4px;">Descripción del servicio</label>
+        <textarea class="form-input" id="prov-descripcion" placeholder="Detallá el servicio, presupuesto, condiciones, incluye/no incluye..." style="resize:vertical;min-height:70px;line-height:1.5;font-family:'DM Sans',sans-serif;"></textarea>
       </div>
     </div>`;
 
@@ -1775,17 +1781,58 @@ function renderProveedoresHTML(ev) {
           <button class="btn btn-red btn-sm" onclick="removeProveedor(${i})" style="padding:4px 8px;">✕</button>
         </div>
       </div>
-      ${p.descripcion ? `<div class="prov-desc">📝 ${p.descripcion}</div>` : ''}
+      ${p.descripcion !== undefined ? `
+      <div class="prov-desc">
+        <textarea
+          class="prov-desc-edit"
+          placeholder="Descripción del servicio, presupuesto, condiciones..."
+          onchange="editProvDesc(${i},this.value)"
+          rows="1"
+          oninput="autoResizeTextarea(this)"
+        >${(p.descripcion||'').replace(/</g,'&lt;')}</textarea>
+      </div>` : `
+      <div class="prov-desc">
+        <textarea
+          class="prov-desc-edit"
+          placeholder="Descripción del servicio, presupuesto, condiciones..."
+          onchange="editProvDesc(${i},this.value)"
+          rows="1"
+          oninput="autoResizeTextarea(this)"
+        ></textarea>
+      </div>`}
       <div class="prov-footer">
         <span class="badge ${estadoBadge[p.estado]||'badge-en-revision'}">${estadoLabel[p.estado]||p.estado}</span>
         ${p.seguro ? `<span class="badge-seguro">🛡 Seguro solicitado</span>` : ''}
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);cursor:pointer;margin-left:auto;">
+          <input type="checkbox" ${p.seguro?'checked':''} onchange="editProvSeguro(${i},this.checked)" style="accent-color:var(--purple);width:13px;height:13px;cursor:pointer;">
+          <span>Seguro solicitado</span>
+        </label>
       </div>
     </div>`).join('');
 }
-function renderProveedores(ev) { const el = document.getElementById('proveedores-list'); if (el) el.innerHTML = renderProveedoresHTML(ev); }
+function renderProveedores(ev) { const el = document.getElementById('proveedores-list'); if (el) { el.innerHTML = renderProveedoresHTML(ev); el.querySelectorAll('.prov-desc-edit').forEach(t => autoResizeTextarea(t)); } }
 async function editProvEstado(i, estado) {
   const ev = eventsData.find(e => e.id === currentEventId);
   if (ev.proveedores && ev.proveedores[i]) { ev.proveedores[i].estado = estado; await saveEventDB(ev); renderProveedores(ev); }
+}
+async function editProvDesc(i, val) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  if (ev.proveedores && ev.proveedores[i] !== undefined) {
+    ev.proveedores[i].descripcion = val;
+    await saveEventDB(ev);
+  }
+}
+async function editProvSeguro(i, checked) {
+  const ev = eventsData.find(e => e.id === currentEventId);
+  if (ev.proveedores && ev.proveedores[i] !== undefined) {
+    ev.proveedores[i].seguro = checked;
+    await saveEventDB(ev);
+    renderProveedores(ev);
+  }
+}
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 async function addProveedor() {
   const nombre = document.getElementById('prov-nombre').value.trim(); if (!nombre) return;
