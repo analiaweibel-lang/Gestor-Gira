@@ -349,7 +349,7 @@
     <button class="active" onclick="showSection(event,'crm')">📋 CRM Empresas</button>
     <button onclick="showSection(event,'eventos')">🎭 Organización de Eventos</button>
     <button onclick="showSection(event,'tareas')">✅ Tareas</button>
-    <button onclick="showSection(event,'locaciones')">📍 Locaciones</button>
+    <button onclick="showSection(event,'proveedores-global')">🤝 Proveedores</button>
     <button onclick="showSection(event,'calendario')">📅 Calendario</button>
   </nav>
   <div class="sync-badge">
@@ -450,35 +450,40 @@
     </div>
   </section>
 
-  <!-- LOCACIONES -->
-  <section id="locaciones" class="section">
+  <!-- PROVEEDORES GLOBAL -->
+  <section id="proveedores-global" class="section">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
       <div>
-        <div class="page-title">Locaciones</div>
-        <div class="page-sub">Base de datos de espacios · consultá historial, capacidad y contactos</div>
+        <div class="page-title">Proveedores</div>
+        <div class="page-sub">Base de datos de proveedores · empresas, contactos y categorías</div>
       </div>
-      <button class="btn btn-brand" onclick="openNewLocacionModal()">+ Nueva locación</button>
+      <button class="btn btn-brand" onclick="openNewProvGlobalModal()">+ Nuevo proveedor</button>
     </div>
     <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px;">
-      <div class="stat-card"><div class="stat-label">Total locaciones</div><div class="stat-num c" id="stat-l-total">—</div></div>
-      <div class="stat-card"><div class="stat-label">Usadas en eventos</div><div class="stat-num g" id="stat-l-usadas">—</div></div>
-      <div class="stat-card"><div class="stat-label">Tipos de espacio</div><div class="stat-num b" id="stat-l-tipos">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total proveedores</div><div class="stat-num c" id="stat-pg-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Categorías</div><div class="stat-num b" id="stat-pg-cats">—</div></div>
+      <div class="stat-card"><div class="stat-label">Con CUIT cargado</div><div class="stat-num g" id="stat-pg-cuit">—</div></div>
     </div>
     <div class="toolbar">
-      <input type="text" class="search-box" placeholder="🔍  Buscar locación..." id="loc-search" oninput="renderLocaciones()">
-      <select class="filter-select" id="fl-tipo" onchange="renderLocaciones()">
-        <option value="">Todos los tipos</option>
-        <option value="Salón">Salón</option>
-        <option value="Hotel">Hotel</option>
-        <option value="Quinta">Quinta</option>
-        <option value="Espacio al aire libre">Al aire libre</option>
-        <option value="Coworking">Coworking</option>
-        <option value="Terraza">Terraza</option>
-        <option value="Estudio">Estudio</option>
-        <option value="Otro">Otro</option>
+      <input type="text" class="search-box" placeholder="🔍  Buscar proveedor, contacto, CUIT..." id="pg-search" oninput="renderProvGlobal()">
+      <select class="filter-select" id="pg-cat-filter" onchange="renderProvGlobal()">
+        <option value="">Todas las categorías</option>
+        <option>🌸 Ambientación</option>
+        <option>🎤 Técnica</option>
+        <option>📍 Locación</option>
+        <option>🍽 Catering</option>
+        <option>📸 Fotografía / Video</option>
+        <option>🎵 Música / DJ</option>
+        <option>🚌 Transporte / Logística</option>
+        <option>👗 Vestimenta / Cotillón</option>
+        <option>💐 Flores / Floral</option>
+        <option>🎁 Regalos / Souvenirs</option>
+        <option>🖨 Imprenta / Gráfica</option>
+        <option>💡 Producción general</option>
+        <option>🔧 Otro</option>
       </select>
     </div>
-    <div class="locaciones-grid" id="locaciones-grid">
+    <div class="locaciones-grid" id="provglobal-grid">
       <!-- renderizado por JS -->
     </div>
   </section>
@@ -672,7 +677,7 @@
   </div>
 </div>
 
-<!-- MODAL: Nueva Locación -->
+<!-- MODAL: Nueva Locación (mantenido para compatibilidad interna) -->
 <div class="modal-overlay" id="new-locacion-modal">
   <div class="modal" style="max-width:680px;">
     <div class="modal-title" id="locacion-modal-title">Nueva Locación</div>
@@ -696,6 +701,45 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('new-locacion-modal')">Cancelar</button>
       <button class="btn btn-brand" onclick="saveLocacion()">Guardar locación</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo Proveedor Global -->
+<div class="modal-overlay" id="new-provglobal-modal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-title" id="provglobal-modal-title">Nuevo Proveedor</div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label class="form-label">Nombre de la empresa *</label><input type="text" class="form-input" id="pg-nombre" placeholder="Ej: Sonido Total S.A."></div>
+      <div class="form-group"><label class="form-label">Contacto</label><input type="text" class="form-input" id="pg-contacto" placeholder="Nombre y apellido"></div>
+      <div class="form-group"><label class="form-label">Teléfono / WhatsApp</label><input type="text" class="form-input" id="pg-telefono" placeholder="11 1234-5678"></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="pg-email" placeholder="mail@empresa.com"></div>
+      <div class="form-group"><label class="form-label">CUIT</label><input type="text" class="form-input" id="pg-cuit" placeholder="20-12345678-9"></div>
+      <div class="form-group"><label class="form-label">Categoría</label>
+        <select class="form-select-input" id="pg-categoria">
+          <option value="">Seleccioná...</option>
+          <option>🌸 Ambientación</option>
+          <option>🎤 Técnica</option>
+          <option>📍 Locación</option>
+          <option>🍽 Catering</option>
+          <option>📸 Fotografía / Video</option>
+          <option>🎵 Música / DJ</option>
+          <option>🚌 Transporte / Logística</option>
+          <option>👗 Vestimenta / Cotillón</option>
+          <option>💐 Flores / Floral</option>
+          <option>🎁 Regalos / Souvenirs</option>
+          <option>🖨 Imprenta / Gráfica</option>
+          <option>💡 Producción general</option>
+          <option>🔧 Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Instagram</label><input type="text" class="form-input" id="pg-instagram" placeholder="@usuario"></div>
+      <div class="form-group"><label class="form-label">Sitio web</label><input type="url" class="form-input" id="pg-web" placeholder="https://..."></div>
+      <div class="form-group form-full"><label class="form-label">Notas</label><textarea class="form-textarea" id="pg-notas" placeholder="Experiencia previa, precios, condiciones, observaciones..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('new-provglobal-modal')">Cancelar</button>
+      <button class="btn btn-brand" onclick="saveProvGlobal()">Guardar proveedor</button>
     </div>
   </div>
 </div>
@@ -749,6 +793,8 @@ let crmData = [];
 let eventsData = [];
 let tareasData = [];
 let locacionesData = [];
+let provGlobalData = [];
+let editingProvGlobalId = null;
 let filtered = [];
 let currentPage = 1;
 const PER_PAGE = 25;
@@ -987,6 +1033,7 @@ function showSection(evt, id) {
   if (id === 'eventos') { loadEvents().then(renderKanban); startAutoRefresh(); }
   else if (id === 'tareas') { loadEvents().then(() => loadTareas().then(renderTareas)); }
   else if (id === 'locaciones') { loadLocaciones().then(renderLocaciones); loadEvents(); }
+  else if (id === 'proveedores-global') { loadProvGlobal().then(renderProvGlobal); }
   else if (id === 'calendario') { loadEvents().then(renderCalendario); }
   else stopAutoRefresh();
 }
@@ -2179,16 +2226,15 @@ async function saveLocacion() {
     link: document.getElementById('lc-link').value.trim(),
     notas: document.getElementById('lc-notas').value.trim()
   };
-  await saveLocacionDB(obj, editingLocacionId);
-  if (!editingLocacionId) {
-    // ya fue añadida en saveLocacionDB
-  } else {
-    const idx = locacionesData.findIndex(l => l.id === editingLocacionId);
-    if (idx >= 0) locacionesData[idx] = {...locacionesData[idx], ...obj};
+  try {
+    await saveLocacionDB(obj, editingLocacionId);
+    await loadLocaciones();
+    closeModal('new-locacion-modal');
+    renderLocaciones();
+    toast('Locación guardada', 'ok');
+  } catch(e) {
+    toast('Error al guardar locación', 'err');
   }
-  closeModal('new-locacion-modal');
-  renderLocaciones();
-  toast('Locación guardada', 'ok');
 }
 
 async function eliminarLocacion(id) {
@@ -2379,6 +2425,156 @@ function renderCalendario() {
     </div>`;
   }).join('');
   if (!legendEvents.length) legend.innerHTML = '<span style="font-size:12px;color:var(--text3);">No hay eventos este mes</span>';
+}
+
+
+// ═══════════════════════════════════════════
+//  PROVEEDORES GLOBAL
+// ═══════════════════════════════════════════
+async function loadProvGlobal() {
+  try {
+    const data = await sbFetch('gira_proveedores?order=nombre.asc&limit=1000');
+    provGlobalData = data || [];
+  } catch(e) {
+    console.error('loadProvGlobal error:', e);
+    provGlobalData = [];
+    toast('Error al cargar proveedores', 'err');
+  }
+}
+
+async function saveProvGlobalDB(obj, id) {
+  setSyncStatus('syncing', 'Guardando...');
+  try {
+    if (id) {
+      await sbFetch('gira_proveedores?id=eq.' + id, { method: 'PATCH', prefer: 'return=minimal', body: obj });
+      const idx = provGlobalData.findIndex(p => p.id === id);
+      if (idx >= 0) provGlobalData[idx] = {...provGlobalData[idx], ...obj};
+    } else {
+      const res = await sbFetch('gira_proveedores', { method: 'POST', body: obj });
+      if (res && res[0]) provGlobalData.push(res[0]);
+    }
+    setSyncStatus('ok', 'Guardado ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Error');
+    throw e;
+  }
+}
+
+async function deleteProvGlobalDB(id) {
+  await sbFetch('gira_proveedores?id=eq.' + id, { method: 'DELETE', prefer: 'return=minimal' });
+  provGlobalData = provGlobalData.filter(p => p.id !== id);
+}
+
+function openNewProvGlobalModal(prov) {
+  editingProvGlobalId = prov ? prov.id : null;
+  document.getElementById('provglobal-modal-title').textContent = prov ? 'Editar proveedor' : 'Nuevo proveedor';
+  document.getElementById('pg-nombre').value = prov ? prov.nombre || '' : '';
+  document.getElementById('pg-contacto').value = prov ? prov.contacto || '' : '';
+  document.getElementById('pg-telefono').value = prov ? prov.telefono || '' : '';
+  document.getElementById('pg-email').value = prov ? prov.email || '' : '';
+  document.getElementById('pg-cuit').value = prov ? prov.cuit || '' : '';
+  document.getElementById('pg-categoria').value = prov ? prov.categoria || '' : '';
+  document.getElementById('pg-instagram').value = prov ? prov.instagram || '' : '';
+  document.getElementById('pg-web').value = prov ? prov.web || '' : '';
+  document.getElementById('pg-notas').value = prov ? prov.notas || '' : '';
+  document.getElementById('new-provglobal-modal').classList.add('open');
+}
+
+async function saveProvGlobal() {
+  const nombre = document.getElementById('pg-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+  const obj = {
+    nombre,
+    contacto: document.getElementById('pg-contacto').value.trim(),
+    telefono: document.getElementById('pg-telefono').value.trim(),
+    email: document.getElementById('pg-email').value.trim(),
+    cuit: document.getElementById('pg-cuit').value.trim(),
+    categoria: document.getElementById('pg-categoria').value,
+    instagram: document.getElementById('pg-instagram').value.trim(),
+    web: document.getElementById('pg-web').value.trim(),
+    notas: document.getElementById('pg-notas').value.trim()
+  };
+  try {
+    await saveProvGlobalDB(obj, editingProvGlobalId);
+    await loadProvGlobal();
+    closeModal('new-provglobal-modal');
+    renderProvGlobal();
+    toast('Proveedor guardado', 'ok');
+  } catch(e) {
+    toast('Error al guardar proveedor', 'err');
+  }
+}
+
+async function eliminarProvGlobal(id) {
+  if (!confirm('¿Eliminar este proveedor?')) return;
+  try {
+    await deleteProvGlobalDB(id);
+    renderProvGlobal();
+    toast('Proveedor eliminado');
+  } catch(e) {
+    toast('Error al eliminar', 'err');
+  }
+}
+
+function renderProvGlobal() {
+  const q = (document.getElementById('pg-search')?.value || '').toLowerCase();
+  const fc = document.getElementById('pg-cat-filter')?.value || '';
+
+  const filtered = provGlobalData.filter(p => {
+    const matchQ = !q ||
+      (p.nombre||'').toLowerCase().includes(q) ||
+      (p.contacto||'').toLowerCase().includes(q) ||
+      (p.cuit||'').toLowerCase().includes(q) ||
+      (p.instagram||'').toLowerCase().includes(q) ||
+      (p.notas||'').toLowerCase().includes(q);
+    const matchC = !fc || p.categoria === fc;
+    return matchQ && matchC;
+  });
+
+  const grid = document.getElementById('provglobal-grid');
+  if (!grid) return;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);">
+      <div style="font-size:40px;margin-bottom:12px;">🤝</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;">No hay proveedores aún</div>
+      <div style="font-size:13px;">Agregá el primero para empezar tu base de datos</div>
+    </div>`;
+  } else {
+    grid.innerHTML = filtered.map(p => {
+      const telClean = (p.telefono||'').replace(/[^0-9+]/g,'');
+      const igHandle = (p.instagram||'').replace(/^@/,'');
+      return `<div class="loc-card">
+        <div class="loc-card-header">
+          <div>
+            <div class="loc-nombre">${(p.nombre||'').replace(/</g,'&lt;')}</div>
+            ${p.categoria ? `<div class="loc-tipo">${p.categoria}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:4px;">
+            ${p.web ? `<a href="${p.web}" target="_blank" class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:12px;text-decoration:none;" title="Web">🌐</a>` : ''}
+            ${igHandle ? `<a href="https://instagram.com/${igHandle}" target="_blank" class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:12px;text-decoration:none;" title="Instagram">📷</a>` : ''}
+          </div>
+        </div>
+        ${p.contacto ? `<div class="loc-detail"><span class="loc-detail-icon">👤</span><span>${(p.contacto||'').replace(/</g,'&lt;')}</span></div>` : ''}
+        ${p.telefono ? `<div class="loc-detail"><span class="loc-detail-icon">📱</span><span>${telClean ? `<a href="https://wa.me/${telClean}" target="_blank" style="color:var(--green);text-decoration:none;">${p.telefono}</a>` : p.telefono}</span></div>` : ''}
+        ${p.email ? `<div class="loc-detail"><span class="loc-detail-icon">✉️</span><span><a href="mailto:${p.email}" style="color:var(--blue);text-decoration:none;">${p.email}</a></span></div>` : ''}
+        ${p.cuit ? `<div class="loc-detail"><span class="loc-detail-icon">🪪</span><span style="font-size:12px;color:var(--text2);">CUIT: ${p.cuit}</span></div>` : ''}
+        ${p.notas ? `<div class="loc-detail" style="margin-top:6px;"><span class="loc-detail-icon">📝</span><span style="color:var(--text2);font-size:12px;line-height:1.5;">${(p.notas||'').substring(0,120).replace(/</g,'&lt;')}${(p.notas||'').length>120?'…':''}</span></div>` : ''}
+        <div class="loc-actions">
+          <button class="btn btn-outline btn-sm" onclick="openNewProvGlobalModal(provGlobalData.find(x=>x.id==='${p.id}'))" style="flex:1;">✏️ Editar</button>
+          <button class="btn btn-red btn-sm" onclick="eliminarProvGlobal('${p.id}')">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Stats
+  const tot = document.getElementById('stat-pg-total');
+  const cats = document.getElementById('stat-pg-cats');
+  const cuit = document.getElementById('stat-pg-cuit');
+  if (tot) tot.textContent = provGlobalData.length;
+  if (cats) cats.textContent = [...new Set(provGlobalData.map(p=>p.categoria).filter(Boolean))].length;
+  if (cuit) cuit.textContent = provGlobalData.filter(p=>p.cuit).length;
 }
 
 // ═══════════════════════════════════════════
