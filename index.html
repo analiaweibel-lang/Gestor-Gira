@@ -551,47 +551,31 @@
 
 <!-- MODAL: Nuevo evento -->
 <div class="modal-overlay" id="new-event-modal">
-  <div class="modal">
+  <div class="modal" style="max-width:460px;">
     <div class="modal-title">Nuevo Evento</div>
-    <div class="form-grid">
-      <div class="form-group form-full"><label class="form-label">Nombre del evento *</label><input type="text" class="form-input" id="ne-nombre" placeholder="Ej: Fiesta fin de año BGH"></div>
-      <div class="form-group"><label class="form-label">Empresa cliente</label><input type="text" class="form-input" id="ne-empresa" placeholder="Nombre de la empresa" list="empresas-list"><datalist id="empresas-list"></datalist></div>
-      <div class="form-group"><label class="form-label">Tipo de evento</label>
-        <select class="form-select-input" id="ne-tipo">
-          <option value="">Seleccioná el tipo...</option>
-          <option>🎉 Fiesta fin de año</option>
-          <option>🏆 Premiación</option>
-          <option>🤝 Team building</option>
-          <option>🎓 Capacitación</option>
-          <option>👨‍💼 Reunión corporativa</option>
-          <option>🍽 Cena de gala</option>
-          <option>🎤 Conferencia / Congreso</option>
-          <option>🚀 Lanzamiento de producto</option>
-          <option>🏃 Jornada deportiva</option>
-          <option>👨‍👩‍👧 Family day</option>
-          <option>🎪 Feria / Expo</option>
-          <option>🎨 Evento cultural</option>
-          <option>💡 Workshop / Taller</option>
-          <option>🥂 Cocktail / Brindis</option>
-          <option>🎭 Show / Espectáculo</option>
-          <option>🌿 Retiro corporativo</option>
-          <option>📸 Producción fotográfica</option>
-          <option>🎊 Otro</option>
-        </select>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Nombre del evento *</label>
+        <input type="text" class="form-input" id="ne-nombre" placeholder="Ej: Cumple 50 Jesica" autofocus
+          onkeydown="if(event.key==='Enter'){document.getElementById('ne-empresa').focus()}">
       </div>
-      <div class="form-group"><label class="form-label">Cantidad de personas</label><input type="number" class="form-input" id="ne-personas" placeholder="Ej: 150" min="1"></div>
-      <div class="form-group"><label class="form-label">Fecha inicio del evento</label><input type="date" class="form-input" id="ne-fecha"></div>
-      <div class="form-group"><label class="form-label">Fecha fin / desarmado</label><input type="date" class="form-input" id="ne-fecha-fin"></div>
-      <div class="form-group form-full"><label class="form-label">Estado inicial</label>
-        <select class="form-select-input" id="ne-estado">
-          <option value="consulta">📥 Consulta recibida</option>
-          <option value="presupuesto">💰 Presupuesto enviado</option>
-          <option value="en-produccion">⚙️ En producción</option>
-          <option value="confirmado">✅ Confirmado</option>
-          <option value="ejecutado">🎉 Ejecutado</option>
-        </select>
+      <div class="form-group">
+        <label class="form-label">Cliente / Empresa</label>
+        <input type="text" class="form-input" id="ne-empresa" placeholder="Ej: Mariano García" list="empresas-list"
+          onkeydown="if(event.key==='Enter'){document.getElementById('ne-fecha').focus()}">
+        <datalist id="empresas-list"></datalist>
       </div>
-      <div class="form-group form-full"><label class="form-label">Descripción</label><textarea class="form-textarea" id="ne-desc" placeholder="Detalles del evento..."></textarea></div>
+      <div class="form-group">
+        <label class="form-label">Fecha del evento</label>
+        <input type="date" class="form-input" id="ne-fecha"
+          onkeydown="if(event.key==='Enter'){saveNewEvent()}">
+      </div>
+      <!-- campos ocultos con defaults -->
+      <input type="hidden" id="ne-estado" value="consulta">
+      <input type="hidden" id="ne-fecha-fin" value="">
+      <input type="hidden" id="ne-tipo" value="">
+      <input type="hidden" id="ne-personas" value="">
+      <input type="hidden" id="ne-desc" value="">
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('new-event-modal')">Cancelar</button>
@@ -618,10 +602,10 @@
       <input type="date" id="ed-fecha" style="color:var(--text3);font-size:12px;background:transparent;border:none;border-bottom:1px dashed transparent;outline:none;font-family:'DM Sans',sans-serif;cursor:text;transition:border-color .2s;" onfocus="this.style.borderBottomColor='var(--brand)'" onblur="autosaveEvent()">
       <select class="filter-select" id="ed-estado-select" onchange="updateEventEstado()" style="margin-left:auto;font-size:12px;padding:5px 9px;">
         <option value="consulta">📥 Consulta recibida</option>
-        <option value="presupuesto">💰 Presupuesto enviado</option>
         <option value="en-produccion">⚙️ En producción</option>
         <option value="confirmado">✅ Confirmado</option>
         <option value="ejecutado">🎉 Ejecutado</option>
+        <option value="no-confirmado">❌ No confirmado</option>
       </select>
     </div>
     <div class="sheet-tabs-bar" id="sheet-tabs-bar"></div>
@@ -1178,11 +1162,11 @@ function updateDatalist() {
 //  KANBAN
 // ═══════════════════════════════════════════
 const ESTADOS = [
-  { id:'consulta',      label:'Consulta recibida',  color:'#0077a8', emoji:'📥' },
-  { id:'presupuesto',   label:'Presupuesto enviado', color:'#e07c2b', emoji:'💰' },
-  { id:'en-produccion', label:'En producción',       color:'#c0392b', emoji:'⚙️' },
-  { id:'confirmado',    label:'Confirmado',          color:'#6c3acd', emoji:'✅' },
-  { id:'ejecutado',     label:'Ejecutado',           color:'#1a9e5c', emoji:'🎉' }
+  { id:'consulta',       label:'Consulta recibida', color:'#0077a8', emoji:'📥' },
+  { id:'en-produccion',  label:'En producción',     color:'#c0392b', emoji:'⚙️' },
+  { id:'confirmado',     label:'Confirmado',        color:'#6c3acd', emoji:'✅' },
+  { id:'ejecutado',      label:'Ejecutado',         color:'#1a9e5c', emoji:'🎉' },
+  { id:'no-confirmado',  label:'No confirmado',     color:'#95a5a6', emoji:'❌' }
 ];
 
 function renderKanban() {
@@ -1227,29 +1211,30 @@ function formatDate(d) {
 }
 
 function openNewEventModal() {
-  ['ne-nombre','ne-empresa','ne-desc'].forEach(id => document.getElementById(id).value = '');
-  ['ne-fecha','ne-fecha-fin'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-  const neTipo = document.getElementById('ne-tipo'); if(neTipo) neTipo.value='';
-  const nePer = document.getElementById('ne-personas'); if(nePer) nePer.value='';
+  document.getElementById('ne-nombre').value = '';
+  document.getElementById('ne-empresa').value = '';
+  document.getElementById('ne-fecha').value = '';
   document.getElementById('ne-estado').value = 'consulta';
   document.getElementById('new-event-modal').classList.add('open');
+  setTimeout(() => document.getElementById('ne-nombre').focus(), 100);
 }
-function openNewEventWithEstado(estado) { openNewEventModal(); document.getElementById('ne-estado').value = estado; }
+function openNewEventWithEstado(estado) {
+  openNewEventModal();
+  document.getElementById('ne-estado').value = estado;
+}
 
 async function saveNewEvent() {
   const nombre = document.getElementById('ne-nombre').value.trim();
-  if (!nombre) { toast('El nombre del evento es obligatorio', 'err'); return; }
+  if (!nombre) { toast('El nombre del evento es obligatorio', 'err'); document.getElementById('ne-nombre').focus(); return; }
   const ev = {
-    nombre, empresa: document.getElementById('ne-empresa').value.trim(),
+    nombre,
+    empresa: document.getElementById('ne-empresa').value.trim(),
     fecha: document.getElementById('ne-fecha').value || null,
-    fecha_desarmado: document.getElementById('ne-fecha-fin')?.value || null,
-    tipo: document.getElementById('ne-tipo')?.value || '',
-    personas: document.getElementById('ne-personas')?.value || null,
-    estado: document.getElementById('ne-estado').value,
-    descripcion: document.getElementById('ne-desc').value.trim(),
-    notas:'', checklist:[], cronoInterno:[], cronoCliente:[], proveedores:[], sheets:[],
-    archivos:[], fecha_armado:null,
-    armado:'', menu:'', menu_especial:'', equipamiento:'', ambientacion:''
+    estado: document.getElementById('ne-estado').value || 'consulta',
+    fecha_desarmado: null, tipo: '', personas: null, descripcion: '',
+    notas: '', checklist: [], cronoInterno: [], cronoCliente: [], proveedores: [], sheets: [],
+    archivos: [], fecha_armado: null,
+    armado: '', menu: '', menu_especial: '', equipamiento: '', ambientacion: ''
   };
   await saveEventDB(ev);
   await loadEvents();
