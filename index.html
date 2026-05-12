@@ -250,6 +250,11 @@
   /* CRONO editable */
   .crono-cell-input { background:transparent; border:none; border-bottom:1px dashed transparent; outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); width:100%; padding:0; transition:border-color .15s; }
   .crono-cell-input:focus { border-bottom-color:var(--brand); background:var(--surface2); border-radius:3px; padding:0 4px; }
+  .crono-cell-edit { background:transparent; border:none; border-bottom:1px dashed var(--border); outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); width:100%; padding:1px 3px; transition:border-color .15s, background .15s; }
+  .crono-cell-edit:focus { border-bottom-color:var(--brand); background:var(--brand-dim); border-radius:3px; }
+  .crono-input { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:5px 8px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); outline:none; transition:border-color .15s; }
+  .crono-input:focus { border-color:var(--brand); background:#fff; }
+  .crono-hint { font-size:11px; color:var(--brand); font-weight:700; white-space:nowrap; padding:0 4px; min-width:44px; display:inline-block; }
 
   /* FILE UPLOAD */
   .files-list { display:flex; flex-direction:column; gap:7px; margin-bottom:12px; }
@@ -1593,111 +1598,80 @@ async function removeCheck(i) {
 function renderCronoHTML(type, items, ev) {
   const notesCol = type === 'interno';
 
-  // Group items by dia key (dia = label like "Día 1", "Día 2", or empty)
+  // Group by dia label
   const grouped = {};
   (items||[]).forEach((r, i) => {
     const key = r.dia || '__noday__';
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push({ r, i });
   });
-
-  // Sort keys: numbered days first (Día 1, Día 2…), then others, then __noday__
   function dayOrder(k) {
     if (k === '__noday__') return 9999;
     const m = k.match(/\d+/);
     return m ? parseInt(m[0]) : 500;
   }
   const allKeys = Object.keys(grouped).sort((a,b) => dayOrder(a) - dayOrder(b));
-
-  // If no blocks at all, create "Día 1"
-  if (!allKeys.length) {
-    allKeys.push('Día 1');
-    grouped['Día 1'] = [];
-  }
+  if (!allKeys.length) { allKeys.push('Día 1'); grouped['Día 1'] = []; }
 
   function blockHtml(key, blockIdx) {
-    const isNoDay = key === '__noday__';
     const dayItems = grouped[key] || [];
-    const inputPrefix = `${type}-${blockIdx}`;
-    const displayLabel = isNoDay ? '' : key;
+    const p = `${type}-b${blockIdx}`;          // prefix for this block's add-row inputs
+    const displayLabel = key === '__noday__' ? '' : key;
 
-    let html = `<div class="crono-block" id="crono-block-${type}-${blockIdx}" data-type="${type}" data-blockidx="${blockIdx}" data-dia="${key}">`;
+    let html = `<div class="crono-block">`;
 
-    // Day header: simple editable text label (Día 1, Día 2…)
+    // ── Day header ─────────────────────────────────────────
     html += `<div class="crono-block-header">
       <input type="text" class="crono-day-input"
-        value="${displayLabel.replace(/"/g,'&quot;')}"
-        placeholder="Ej: Día 1"
-        onchange="editCronoDia('${type}','${key}',this.value)"
-        title="Nombre del día">
-      <button class="btn btn-red btn-sm" style="padding:2px 7px;font-size:11px;margin-left:auto;" onclick="removeCronoBlock('${type}','${key}')" title="Eliminar este día">🗑 Día</button>
+        value="${displayLabel.replace(/"/g,'&quot;')}" placeholder="Ej: Día 1"
+        onchange="editCronoDia('${type}','${key}',this.value)">
+      <button class="btn btn-outline btn-sm" style="margin-left:auto;padding:2px 9px;font-size:11px;color:var(--text3);"
+        onclick="removeCronoBlock('${type}','${key}')">🗑 Día</button>
     </div>`;
 
-    // Rows table
-    if (dayItems.length) {
-      html += `<table class="crono-table">
-        <thead><tr>
-          <th style="width:80px;">Horario</th>
-          <th style="width:80px;">Duración</th>
-          <th>Actividad</th>
-          ${notesCol ? '<th style="width:150px;">Notas</th>' : ''}
-          <th style="width:32px;"></th>
-        </tr></thead>
-        <tbody>`;
-      dayItems.forEach(({ r, i }) => {
-        html += `<tr class="crono-row">
-          <td class="crono-td-hora">
-            <span class="crono-text">${r.hora||'—'}</span>
-            <input class="crono-cell-input crono-edit-input" value="${(r.hora||'').replace(/"/g,'&quot;')}" placeholder="20:00"
-              onblur="this.value=parseHora(this.value);editCrono('${type}',${i},'hora',this.value);cronoToggleEdit(this,false)"
-              onkeydown="if(event.key==='Enter')this.blur()"
-              style="display:none;">
-          </td>
-          <td class="crono-td-dur">
-            <span class="crono-text">${r.duracion||'—'}</span>
-            <input class="crono-cell-input crono-edit-input" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min"
-              onblur="editCrono('${type}',${i},'duracion',this.value);cronoToggleEdit(this,false)"
-              onkeydown="if(event.key==='Enter')this.blur()"
-              style="display:none;">
-          </td>
-          <td class="crono-td-main">
-            <span class="crono-text">${(r.asunto||'').replace(/</g,'&lt;')}</span>
-            <input class="crono-cell-input crono-edit-input" value="${(r.asunto||'').replace(/"/g,'&quot;')}" placeholder="Actividad..."
-              onblur="editCrono('${type}',${i},'asunto',this.value);cronoToggleEdit(this,false)"
-              onkeydown="if(event.key==='Enter')this.blur()"
-              style="display:none;">
-          </td>
-          ${notesCol ? `<td class="crono-td-notes">
-            <span class="crono-text" style="color:var(--text2);font-size:12px;">${(r.notas||'').replace(/</g,'&lt;')}</span>
-            <input class="crono-cell-input crono-edit-input" value="${(r.notas||'').replace(/"/g,'&quot;')}" placeholder="Nota..."
-              onblur="editCrono('${type}',${i},'notas',this.value);cronoToggleEdit(this,false)"
-              onkeydown="if(event.key==='Enter')this.blur()"
-              style="display:none;">
-          </td>` : ''}
-          <td style="width:32px;text-align:center;">
-            <button class="crono-del-btn" onclick="removeCrono('${type}',${i})" title="Eliminar">✕</button>
-          </td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-    }
+    // ── Rows table ─────────────────────────────────────────
+    html += `<table class="crono-table"><thead><tr>
+      <th style="width:75px;">Horario</th>
+      <th style="width:80px;">Duración</th>
+      <th>Actividad</th>
+      ${notesCol ? '<th style="width:140px;">Notas</th>' : ''}
+      <th style="width:30px;"></th>
+    </tr></thead><tbody>`;
 
-    // Add-row input bar
+    dayItems.forEach(({ r, i }) => {
+      html += `<tr>
+        <td><input class="crono-cell-edit" value="${(r.hora||'').replace(/"/g,'&quot;')}" placeholder="20:00"
+          onblur="this.value=parseHora(this.value)||this.value; editCrono('${type}',${i},'hora',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()"></td>
+        <td><input class="crono-cell-edit" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min"
+          onblur="editCrono('${type}',${i},'duracion',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()"></td>
+        <td><input class="crono-cell-edit" value="${(r.asunto||'').replace(/"/g,'&quot;')}" placeholder="Actividad..."
+          onblur="editCrono('${type}',${i},'asunto',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()"></td>
+        ${notesCol ? `<td><input class="crono-cell-edit" value="${(r.notas||'').replace(/"/g,'&quot;')}" placeholder="Nota..."
+          onblur="editCrono('${type}',${i},'notas',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()"></td>` : ''}
+        <td><button class="crono-del-btn" onclick="removeCronoItem('${type}',${i})">✕</button></td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+
+    // ── Add-row ─────────────────────────────────────────────
     html += `<div class="crono-add-row">
-      <input type="text" class="crono-cell-input" id="${inputPrefix}-hora" placeholder="20:00"
-        style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
-        onblur="this.value=parseHora(this.value)">
-      <input type="text" class="crono-cell-input" id="${inputPrefix}-duracion" placeholder="ej: 40 ó 1:30"
-        style="max-width:110px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
-        oninput="prefillNextHora('${inputPrefix}')">
-      <span id="${inputPrefix}-hint" style="font-size:12px;color:var(--brand);font-weight:600;white-space:nowrap;opacity:0;transition:opacity .2s;"></span>
-      <input type="text" class="crono-cell-input" id="${inputPrefix}-asunto" placeholder="+ Actividad..." style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
-        onkeydown="if(event.key==='Enter'){addCronoRow('${type}','${key}','${inputPrefix}');event.preventDefault();}">
-      ${notesCol ? `<input type="text" class="crono-cell-input" id="${inputPrefix}-notas" placeholder="Notas" style="max-width:140px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">` : ''}
-      <button class="btn btn-brand btn-sm" onclick="addCronoRow('${type}','${key}','${inputPrefix}')">+ Agregar</button>
+      <input id="${p}-h" class="crono-input" placeholder="20:00" style="width:80px;"
+        onblur="this.value=parseHora(this.value)||this.value">
+      <input id="${p}-d" class="crono-input" placeholder="40 min" style="width:90px;"
+        oninput="cronoShowHint('${p}')">
+      <span id="${p}-hint" class="crono-hint"></span>
+      <input id="${p}-a" class="crono-input" placeholder="Actividad..." style="flex:1;"
+        onkeydown="if(event.key==='Enter'){cronoAddRow('${type}','${key}','${p}');event.preventDefault();}">
+      ${notesCol ? `<input id="${p}-n" class="crono-input" placeholder="Notas" style="width:120px;">` : ''}
+      <button class="btn btn-brand btn-sm" onclick="cronoAddRow('${type}','${key}','${p}')">+ Agregar</button>
     </div>`;
 
-    html += '</div>';
+    html += `</div>`;
     return html;
   }
 
@@ -1707,245 +1681,68 @@ function renderCronoHTML(type, items, ev) {
 function renderCronoTable(type, items, ev) {
   const evRef = ev || eventsData.find(e => e.id === currentEventId);
   const el = document.getElementById(`crono-${type}-body`);
-  if (el) {
-    el.innerHTML = renderCronoHTML(type, items, evRef);
-    bindCronoClicks(el);
-  }
+  if (el) el.innerHTML = renderCronoHTML(type, items, evRef);
 }
-// Add a new empty day block at the bottom
-async function addCronoDay(type) {
+
+// ── Show hint: next start time preview ─────────────────────
+function cronoShowHint(p) {
+  const h = document.getElementById(p+'-h');
+  const d = document.getElementById(p+'-d');
+  const hint = document.getElementById(p+'-hint');
+  if (!h || !d || !hint) return;
+  const sig = nextHora(parseHora(h.value) || h.value, d.value.trim());
+  hint.textContent = sig ? '→ '+sig : '';
+}
+
+// ── Add row to a day block ──────────────────────────────────
+async function cronoAddRow(type, dia, p) {
+  const hEl = document.getElementById(p+'-h');
+  const dEl = document.getElementById(p+'-d');
+  const aEl = document.getElementById(p+'-a');
+  const nEl = document.getElementById(p+'-n');
+  const asunto = aEl ? aEl.value.trim() : '';
+  if (!asunto) { if (aEl) aEl.focus(); return; }
   const ev = eventsData.find(e => e.id === currentEventId);
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   ev[key] = ev[key] || [];
-  // Count existing distinct days to auto-number
-  const existingDays = [...new Set((ev[key]||[]).map(r => r.dia).filter(Boolean))];
-  const nextNum = existingDays.length + 1;
-  const newDia = 'Día ' + nextNum;
-  // Add a placeholder row so the block appears
-  const item = { dia: newDia, hora: '', asunto: '', duracion: '' };
-  if (type === 'interno') item.notas = '';
-  ev[key].push(item);
-  await saveEventDB(ev);
-  renderCronoTable(type, ev[key], ev);
-}
-// Add a row inside a specific day block
-// Click a crono-text span → hide span, show input, focus it
-function cronoToggleEdit(inputEl, show) {
-  const td = inputEl.closest('td');
-  if (!td) return;
-  const span = td.querySelector('.crono-text');
-  if (show) {
-    if (span) span.style.display = 'none';
-    inputEl.style.display = 'block';
-    inputEl.focus();
-    inputEl.select();
-  } else {
-    inputEl.style.display = 'none';
-    // Update span text with new value
-    if (span) {
-      span.textContent = inputEl.value || span.textContent;
-      span.style.display = 'block';
-    }
-  }
-}
-// Make crono-text spans clickable (delegated — called after render)
-function bindCronoClicks(container) {
-  if (!container) return;
-  container.querySelectorAll('.crono-text').forEach(span => {
-    span.onclick = function() {
-      const td = span.closest('td');
-      if (!td) return;
-      const inp = td.querySelector('.crono-edit-input');
-      if (inp) cronoToggleEdit(inp, true);
-    };
-  });
-}
-
-// ─── Hora helpers ───────────────────────────────────────────
-// Pre-fills the hora field of the add-row when user finishes entering duracion
-function prefillNextHora(prefix) {
-  const horaEl = document.getElementById(prefix + '-hora');
-  const durEl  = document.getElementById(prefix + '-duracion');
-  const hintEl = document.getElementById(prefix + '-hint');
-  if (!horaEl || !durEl) return;
-  const horaFmt = parseHora(horaEl.value);
-  const sig = nextHora(horaFmt, durEl.value.trim());
-  durEl.dataset.nextHora = sig;
-  // Live hint: show "→ 21:30" next to the duracion field
-  if (hintEl) {
-    if (sig) {
-      hintEl.textContent = '→ ' + sig;
-      hintEl.style.opacity = '1';
-    } else {
-      hintEl.textContent = '';
-      hintEl.style.opacity = '0';
-    }
-  }
-}
-// Accepts: "2000", "20.00", "20,00", "20:00", "20h00", "2000hs" → "20:00"
-function parseHora(raw) {
-  if (!raw) return '';
-  const s = raw.toString().replace(/hs\.?$/i,'').replace(/h/i,':').replace(/[.,]/g,':').replace(/\s/g,'');
-  // pure digits: 4 → "HH:MM", 3 → "H:MM", 1-2 → "HH:00"
-  const digits = s.replace(/:/g,'');
-  if (/^\d+$/.test(digits)) {
-    if (digits.length <= 2) return digits.padStart(2,'0') + ':00';
-    if (digits.length === 3) return digits[0] + ':' + digits.slice(1);
-    return digits.slice(0,2) + ':' + digits.slice(2,4);
-  }
-  // already has colon
-  const m = s.match(/^(\d{1,2}):(\d{2})/);
-  if (m) return m[1].padStart(2,'0') + ':' + m[2];
-  return s;
-}
-
-// Returns total minutes from "HH:MM"
-function horaToMins(h) {
-  const m = (h||'').match(/^(\d{1,2}):(\d{2})/);
-  if (!m) return null;
-  let hh = parseInt(m[1]), mm = parseInt(m[2]);
-  if (hh < 8) hh += 24; // treat 00-07 as next-day
-  return hh * 60 + mm;
-}
-
-// Parses duration: "40 min", "1.30", "1:30", "1h30", "90" (minutes) → minutes
-function parseDuracion(raw) {
-  if (!raw) return null;
-  const s = raw.toString().toLowerCase().replace(/\s/g,'');
-  // "Xh" or "Xhrs"
-  const hOnly = s.match(/^(\d+)h(rs?)?$/);
-  if (hOnly) return parseInt(hOnly[1]) * 60;
-  // "XhYm" or "Xh30"
-  const hm = s.match(/^(\d+)h(\d+)/);
-  if (hm) return parseInt(hm[1]) * 60 + parseInt(hm[2]);
-  // "X.Y" or "X:Y" or "X,Y" — X hours Y mins
-  const dot = s.match(/^(\d+)[.:](\d{2})$/);
-  if (dot) return parseInt(dot[1]) * 60 + parseInt(dot[2]);
-  // plain number = minutes
-  const plain = s.match(/^(\d+)(min|m)?$/);
-  if (plain) return parseInt(plain[1]);
-  return null;
-}
-
-// Returns "HH:MM" string, handling overnight (>= 24h → wrap to 00:xx)
-function minsToHora(totalMins) {
-  totalMins = totalMins % (24 * 60); // wrap at midnight (next day shown as 00:xx)
-  const hh = Math.floor(totalMins / 60) % 24;
-  const mm = totalMins % 60;
-  return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
-}
-
-// Given a formatted hora "HH:MM" and a raw duracion string, returns next "HH:MM"
-function nextHora(hora, duracionRaw) {
-  const startMins = horaToMins(hora);
-  const durMins = parseDuracion(duracionRaw);
-  if (startMins === null || durMins === null) return '';
-  return minsToHora(startMins + durMins);
-}
-// ─────────────────────────────────────────────────────────────
-
-async function addCronoRow(type, dia, prefix) {
-  const horaEl = document.getElementById(prefix + '-hora');
-  const durEl = document.getElementById(prefix + '-duracion');
-  const asuntoEl = document.getElementById(prefix + '-asunto');
-  const notasEl = document.getElementById(prefix + '-notas');
-  const asunto = asuntoEl ? asuntoEl.value.trim() : '';
-  if (!asunto) { if (asuntoEl) asuntoEl.focus(); return; }
-  const ev = eventsData.find(e => e.id === currentEventId);
-  const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
-  ev[key] = ev[key] || [];
-  const rawHora = horaEl ? horaEl.value.trim() : '';
-  const rawDur  = durEl  ? durEl.value.trim()  : '';
-  const horaFmt = parseHora(rawHora);
-  const item = {
+  const rawHora = hEl ? hEl.value.trim() : '';
+  const rawDur  = dEl ? dEl.value.trim() : '';
+  const horaFmt = parseHora(rawHora) || rawHora;
+  const sig = nextHora(horaFmt, rawDur);   // calculate BEFORE render
+  ev[key].push({
     dia: dia === '__noday__' ? '' : dia,
     hora: horaFmt,
     duracion: rawDur,
-    asunto
-  };
-  if (type === 'interno') item.notas = notasEl ? notasEl.value.trim() : '';
-  // Calculate next hora BEFORE render destroys the DOM
-  const siguiente = nextHora(horaFmt, rawDur);
-  ev[key].push(item);
+    asunto,
+    notas: nEl ? nEl.value.trim() : ''
+  });
   sortCrono(ev[key]);
-  // Save and re-render (this destroys the old DOM elements)
-  saveEventDB(ev); // fire-and-forget, don't await so UI is instant
-  renderCronoTable(type, ev[key], ev);
-  // After re-render, grab the NEW add-row elements and pre-fill hora
-  const newHoraEl = document.getElementById(prefix + '-hora');
-  const newDurEl  = document.getElementById(prefix + '-duracion');
-  const newAsuntoEl = document.getElementById(prefix + '-asunto');
-  const newNotasEl  = document.getElementById(prefix + '-notas');
-  if (newHoraEl) newHoraEl.value = siguiente;
-  if (newDurEl)  newDurEl.value = '';
-  if (newAsuntoEl) { newAsuntoEl.value = ''; newAsuntoEl.focus(); }
-  if (newNotasEl)  newNotasEl.value = '';
+  saveEventDB(ev);                          // fire-and-forget
+  renderCronoTable(type, ev[key], ev);      // re-render
+  // After re-render grab NEW elements and pre-fill next hora
+  const newH = document.getElementById(p+'-h');
+  const newD = document.getElementById(p+'-d');
+  const newA = document.getElementById(p+'-a');
+  const newN = document.getElementById(p+'-n');
+  if (newH) newH.value = sig;
+  if (newD) newD.value = '';
+  if (newA) { newA.value = ''; newA.focus(); }
+  if (newN) newN.value = '';
+  // Update hint
+  const newHint = document.getElementById(p+'-hint');
+  if (newHint) newHint.textContent = '';
 }
-// Edit the dia of all items in a block
-async function editCronoDia(type, oldDia, newDia) {
+
+// ── Remove a single row instantly ──────────────────────────
+async function removeCronoItem(type, i) {
   const ev = eventsData.find(e => e.id === currentEventId);
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
-  const matchDia = oldDia === '__noday__' ? '' : oldDia;
-  (ev[key]||[]).forEach(r => { if ((r.dia||'') === matchDia) r.dia = newDia.trim(); });
-  // Re-sort by day number if possible
-  (ev[key]||[]).sort((a,b) => {
-    const ma = (a.dia||'').match(/\d+/), mb = (b.dia||'').match(/\d+/);
-    const na = ma ? parseInt(ma[0]) : 500, nb = mb ? parseInt(mb[0]) : 500;
-    if (na !== nb) return na - nb;
-    return horaSort(a.hora) - horaSort(b.hora);
-  });
-  await saveEventDB(ev);
-  renderCronoTable(type, ev[key], ev);
+  if (!ev[key]) return;
+  ev[key].splice(i, 1);
+  renderCronoTable(type, ev[key], ev);   // instant
+  saveEventDB(ev);                        // background
 }
-function horaSort(h) {
-  if (!h) return 9999;
-  const clean = (h||'').replace(/[.,]/g, ':').trim();
-  const match = clean.match(/(\d{1,2})[:h]?(\d{0,2})/);
-  if (!match) return 9999;
-  let hh = parseInt(match[1]) || 0;
-  const mm = parseInt(match[2]) || 0;
-  if (hh < 8) hh += 24;
-  return hh * 60 + mm;
-}
-// Remove all items in a day block
-async function removeCronoBlock(type, dia) {
-  if (!confirm('¿Eliminar este día y todos sus horarios?')) return;
-  const ev = eventsData.find(e => e.id === currentEventId);
-  const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
-  const matchDia = dia === '__noday__' ? '' : dia;
-  ev[key] = (ev[key]||[]).filter(r => (r.dia||'') !== matchDia);
-  await saveEventDB(ev);
-  renderCronoTable(type, ev[key], ev);
-}
-function sortCrono(arr) {
-  if (!arr) return;
-  // Normalize hour: treat 00-05 as 24-29 so they sort after evening hours
-  function horaSort(h) {
-    if (!h) return 9999;
-    const clean = h.replace(/[.,]/g, ':').trim();
-    const match = clean.match(/^(\d{1,2})[:h]?(\d{0,2})/);
-    if (!match) return 9999;
-    let hh = parseInt(match[1]) || 0;
-    const mm = parseInt(match[2]) || 0;
-    if (hh < 8) hh += 24; // midnight–7am sorts after evening
-    return hh * 60 + mm;
-  }
-  arr.sort((a, b) => {
-    const da = a.dia || '', db = b.dia || '';
-    if (da !== db) return da < db ? -1 : 1;
-    return horaSort(a.hora) - horaSort(b.hora);
-  });
-}
-async function editCrono(type, i, field, value) {
-  const ev = eventsData.find(e => e.id === currentEventId);
-  const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
-  if (ev[key] && ev[key][i]) {
-    ev[key][i][field] = value;
-    if (field === 'dia' || field === 'hora') sortCrono(ev[key]);
-    await saveEventDB(ev);
-    if (field === 'dia') renderCronoTable(type, ev[key]);
-  }
-}
+
 // addCronoItem is no longer used — rows are added per-block via addCronoRow
 async function removeCrono(type, i) {
   const ev = eventsData.find(e => e.id === currentEventId);
