@@ -225,7 +225,9 @@
   /* CRONO BLOCKS */
   .crono-block { border:1px solid var(--border); border-radius:10px; margin-bottom:14px; overflow:hidden; }
   .crono-block-header { display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--surface2); border-bottom:1px solid var(--border); }
-  .crono-date-picker { background:transparent; border:none; border-bottom:2px solid var(--brand); outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); cursor:pointer; padding:2px 4px; }
+  .crono-day-input { background:transparent; border:none; border-bottom:2px solid var(--brand); outline:none; font-family:'DM Serif Display',serif; font-size:14px; font-weight:600; color:var(--brand); cursor:text; padding:2px 6px; width:120px; transition:background .15s; }
+  .crono-day-input:focus { background:var(--brand-dim); border-radius:4px; }
+  .crono-day-input::placeholder { color:var(--text3); font-family:'DM Sans',sans-serif; font-weight:400; font-size:13px; }
   .crono-day-label { font-size:12px; font-weight:600; color:var(--text2); }
   .crono-add-row { display:flex; gap:7px; padding:8px 12px; background:var(--surface2); border-top:1px solid var(--border); flex-wrap:wrap; align-items:center; }
 
@@ -1572,9 +1574,8 @@ async function removeCheck(i) {
 // CRONOGRAMA
 function renderCronoHTML(type, items, ev) {
   const notesCol = type === 'interno';
-  const DAYS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-  // Group items by dia key
+  // Group items by dia key (dia = label like "Día 1", "Día 2", or empty)
   const grouped = {};
   (items||[]).forEach((r, i) => {
     const key = r.dia || '__noday__';
@@ -1582,36 +1583,35 @@ function renderCronoHTML(type, items, ev) {
     grouped[key].push({ r, i });
   });
 
-  // Collect keys: real dates sorted + __noday__ last
-  const dateKeys = Object.keys(grouped).filter(k => k !== '__noday__').sort();
-  const allKeys = dateKeys.concat(grouped['__noday__'] ? ['__noday__'] : []);
+  // Sort keys: numbered days first (Día 1, Día 2…), then others, then __noday__
+  function dayOrder(k) {
+    if (k === '__noday__') return 9999;
+    const m = k.match(/\d+/);
+    return m ? parseInt(m[0]) : 500;
+  }
+  const allKeys = Object.keys(grouped).sort((a,b) => dayOrder(a) - dayOrder(b));
 
-  // If no blocks at all, show one empty block for today
+  // If no blocks at all, create "Día 1"
   if (!allKeys.length) {
-    const today = new Date().toISOString().split('T')[0];
-    allKeys.push(today);
-    grouped[today] = [];
+    allKeys.push('Día 1');
+    grouped['Día 1'] = [];
   }
 
   function blockHtml(key, blockIdx) {
     const isNoDay = key === '__noday__';
     const dayItems = grouped[key] || [];
     const inputPrefix = `${type}-${blockIdx}`;
-
-    let dayLabel = '';
-    if (!isNoDay) {
-      const d = new Date(key + 'T12:00:00');
-      dayLabel = DAYS_ES[d.getDay()] + ' ' + formatDate(key);
-    }
+    const displayLabel = isNoDay ? '' : key;
 
     let html = `<div class="crono-block" id="crono-block-${type}-${blockIdx}" data-type="${type}" data-blockidx="${blockIdx}" data-dia="${key}">`;
 
-    // Day header with editable date picker
+    // Day header: simple editable text label (Día 1, Día 2…)
     html += `<div class="crono-block-header">
-      <input type="date" class="crono-date-picker" value="${isNoDay ? '' : key}"
+      <input type="text" class="crono-day-input"
+        value="${displayLabel.replace(/"/g,'&quot;')}"
+        placeholder="Ej: Día 1"
         onchange="editCronoDia('${type}','${key}',this.value)"
-        title="Fecha de este día">
-      ${!isNoDay ? `<span class="crono-day-label">${dayLabel}</span>` : '<span class="crono-day-label" style="color:var(--text3)">Sin fecha asignada</span>'}
+        title="Nombre del día">
       <button class="btn btn-red btn-sm" style="padding:2px 7px;font-size:11px;margin-left:auto;" onclick="removeCronoBlock('${type}','${key}')" title="Eliminar este día">🗑 Día</button>
     </div>`;
 
@@ -1619,15 +1619,17 @@ function renderCronoHTML(type, items, ev) {
     if (dayItems.length) {
       html += `<table class="crono-table">
         <thead><tr>
-          <th style="width:110px;">Horario</th>
+          <th style="width:90px;">Horario</th>
+          <th style="width:90px;">Duración</th>
           <th>Actividad</th>
-          ${notesCol ? '<th style="width:180px;">Notas</th>' : ''}
+          ${notesCol ? '<th style="width:160px;">Notas</th>' : ''}
           <th style="width:32px;"></th>
         </tr></thead>
         <tbody>`;
       dayItems.forEach(({ r, i }) => {
         html += `<tr>
           <td><input class="crono-cell-input" value="${(r.hora||'').replace(/"/g,'&quot;')}" placeholder="20:00" onchange="editCrono('${type}',${i},'hora',this.value)"></td>
+          <td><input class="crono-cell-input" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min" onchange="editCrono('${type}',${i},'duracion',this.value)"></td>
           <td><input class="crono-cell-input" value="${(r.asunto||'').replace(/"/g,'&quot;')}" placeholder="Actividad..." onchange="editCrono('${type}',${i},'asunto',this.value)"></td>
           ${notesCol ? `<td><input class="crono-cell-input" value="${(r.notas||'').replace(/"/g,'&quot;')}" placeholder="Nota..." onchange="editCrono('${type}',${i},'notas',this.value)"></td>` : ''}
           <td><button class="btn btn-red btn-sm" onclick="removeCrono('${type}',${i})" style="padding:2px 6px;">✕</button></td>
@@ -1638,10 +1640,11 @@ function renderCronoHTML(type, items, ev) {
 
     // Add-row input bar
     html += `<div class="crono-add-row">
-      <input type="text" class="crono-cell-input" id="${inputPrefix}-hora" placeholder="Horario" style="max-width:100px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">
-      <input type="text" class="crono-cell-input" id="${inputPrefix}-asunto" placeholder="+ Agregar horario..." style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
+      <input type="text" class="crono-cell-input" id="${inputPrefix}-hora" placeholder="Horario" style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">
+      <input type="text" class="crono-cell-input" id="${inputPrefix}-duracion" placeholder="Duración" style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">
+      <input type="text" class="crono-cell-input" id="${inputPrefix}-asunto" placeholder="+ Actividad..." style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
         onkeydown="if(event.key==='Enter'){addCronoRow('${type}','${key}','${inputPrefix}');event.preventDefault();}">
-      ${notesCol ? `<input type="text" class="crono-cell-input" id="${inputPrefix}-notas" placeholder="Notas" style="max-width:150px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">` : ''}
+      ${notesCol ? `<input type="text" class="crono-cell-input" id="${inputPrefix}-notas" placeholder="Notas" style="max-width:140px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">` : ''}
       <button class="btn btn-brand btn-sm" onclick="addCronoRow('${type}','${key}','${inputPrefix}')">+ Agregar</button>
     </div>`;
 
@@ -1656,8 +1659,12 @@ async function addCronoDay(type) {
   const ev = eventsData.find(e => e.id === currentEventId);
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   ev[key] = ev[key] || [];
-  // Add a placeholder item with empty dia so block appears
-  const item = { dia: '', hora: '', asunto: '' };
+  // Count existing distinct days to auto-number
+  const existingDays = [...new Set((ev[key]||[]).map(r => r.dia).filter(Boolean))];
+  const nextNum = existingDays.length + 1;
+  const newDia = 'Día ' + nextNum;
+  // Add a placeholder row so the block appears
+  const item = { dia: newDia, hora: '', asunto: '', duracion: '' };
   if (type === 'interno') item.notas = '';
   ev[key].push(item);
   await saveEventDB(ev);
@@ -1666,6 +1673,7 @@ async function addCronoDay(type) {
 // Add a row inside a specific day block
 async function addCronoRow(type, dia, prefix) {
   const horaEl = document.getElementById(prefix + '-hora');
+  const durEl = document.getElementById(prefix + '-duracion');
   const asuntoEl = document.getElementById(prefix + '-asunto');
   const notasEl = document.getElementById(prefix + '-notas');
   const asunto = asuntoEl ? asuntoEl.value.trim() : '';
@@ -1673,11 +1681,17 @@ async function addCronoRow(type, dia, prefix) {
   const ev = eventsData.find(e => e.id === currentEventId);
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   ev[key] = ev[key] || [];
-  const item = { dia: dia === '__noday__' ? '' : dia, hora: horaEl ? horaEl.value.trim() : '', asunto };
+  const item = {
+    dia: dia === '__noday__' ? '' : dia,
+    hora: horaEl ? horaEl.value.trim() : '',
+    duracion: durEl ? durEl.value.trim() : '',
+    asunto
+  };
   if (type === 'interno') item.notas = notasEl ? notasEl.value.trim() : '';
   ev[key].push(item);
   sortCrono(ev[key]);
   if (horaEl) horaEl.value = '';
+  if (durEl) durEl.value = '';
   if (asuntoEl) asuntoEl.value = '';
   if (notasEl) notasEl.value = '';
   await saveEventDB(ev);
@@ -1688,10 +1702,26 @@ async function editCronoDia(type, oldDia, newDia) {
   const ev = eventsData.find(e => e.id === currentEventId);
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   const matchDia = oldDia === '__noday__' ? '' : oldDia;
-  (ev[key]||[]).forEach(r => { if ((r.dia||'') === matchDia) r.dia = newDia; });
-  sortCrono(ev[key]);
+  (ev[key]||[]).forEach(r => { if ((r.dia||'') === matchDia) r.dia = newDia.trim(); });
+  // Re-sort by day number if possible
+  (ev[key]||[]).sort((a,b) => {
+    const ma = (a.dia||'').match(/\d+/), mb = (b.dia||'').match(/\d+/);
+    const na = ma ? parseInt(ma[0]) : 500, nb = mb ? parseInt(mb[0]) : 500;
+    if (na !== nb) return na - nb;
+    return horaSort(a.hora) - horaSort(b.hora);
+  });
   await saveEventDB(ev);
   renderCronoTable(type, ev[key], ev);
+}
+function horaSort(h) {
+  if (!h) return 9999;
+  const clean = (h||'').replace(/[.,]/g, ':').trim();
+  const match = clean.match(/(\d{1,2})[:h]?(\d{0,2})/);
+  if (!match) return 9999;
+  let hh = parseInt(match[1]) || 0;
+  const mm = parseInt(match[2]) || 0;
+  if (hh < 8) hh += 24;
+  return hh * 60 + mm;
 }
 // Remove all items in a day block
 async function removeCronoBlock(type, dia) {
@@ -1705,10 +1735,21 @@ async function removeCronoBlock(type, dia) {
 }
 function sortCrono(arr) {
   if (!arr) return;
-  arr.sort((a,b) => {
-    const da = a.dia||'', db = b.dia||'';
+  // Normalize hour: treat 00-05 as 24-29 so they sort after evening hours
+  function horaSort(h) {
+    if (!h) return 9999;
+    const clean = h.replace(/[.,]/g, ':').trim();
+    const match = clean.match(/^(\d{1,2})[:h]?(\d{0,2})/);
+    if (!match) return 9999;
+    let hh = parseInt(match[1]) || 0;
+    const mm = parseInt(match[2]) || 0;
+    if (hh < 8) hh += 24; // midnight–7am sorts after evening
+    return hh * 60 + mm;
+  }
+  arr.sort((a, b) => {
+    const da = a.dia || '', db = b.dia || '';
     if (da !== db) return da < db ? -1 : 1;
-    return (a.hora||'') < (b.hora||'') ? -1 : 1;
+    return horaSort(a.hora) - horaSort(b.hora);
   });
 }
 async function editCrono(type, i, field, value) {
@@ -1716,7 +1757,7 @@ async function editCrono(type, i, field, value) {
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   if (ev[key] && ev[key][i]) {
     ev[key][i][field] = value;
-    if (field === 'dia') ev[key].sort((a,b) => (a.dia||'') < (b.dia||'') ? -1 : 1);
+    if (field === 'dia' || field === 'hora') sortCrono(ev[key]);
     await saveEventDB(ev);
     if (field === 'dia') renderCronoTable(type, ev[key]);
   }
@@ -1752,11 +1793,11 @@ function downloadCrono(type) {
   sortedKeys.forEach(key => {
     // Always show day header when there's a real date
     if (key !== noDayKey) {
-      tablesHtml += `<div class="day-header">${dLabel(key)}</div>`;
+      tablesHtml += `<div class="day-header">${key}</div>`;
     }
-    tablesHtml += `<table><thead><tr><th style="width:110px;">Horario</th><th>Actividad</th>${notesCol ? '<th style="width:160px;">Notas</th>' : ''}</tr></thead><tbody>`;
+    tablesHtml += `<table><thead><tr><th style="width:90px;">Horario</th><th style="width:80px;">Duración</th><th>Actividad</th>${notesCol ? '<th style="width:140px;">Notas</th>' : ''}</tr></thead><tbody>`;
     (grouped[key]||[]).forEach(r => {
-      tablesHtml += `<tr><td>${r.hora||''}</td><td>${(r.asunto||'').replace(/\n/g,'<br>')}</td>${notesCol ? `<td>${(r.notas||'').replace(/\n/g,'<br>')}</td>` : ''}</tr>`;
+      tablesHtml += `<tr><td>${r.hora||''}</td><td>${r.duracion||''}</td><td>${(r.asunto||'').replace(/\n/g,'<br>')}</td>${notesCol ? `<td>${(r.notas||'').replace(/\n/g,'<br>')}</td>` : ''}</tr>`;
     });
     tablesHtml += '</tbody></table>';
   });
@@ -1993,21 +2034,26 @@ function generateShareDoc() {
   function buildCronoHtmlForShare(items, includeNotes) {
     const grouped = {};
     items.forEach(r => { const k=r.dia||'__nd__'; if(!grouped[k]) grouped[k]=[]; grouped[k].push(r); });
-    const keys = Object.keys(grouped).filter(k=>k!=='__nd__').sort().concat(grouped['__nd__']?['__nd__']:[]);
-    const DAYS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    // Sort by day number if possible
+    const keys = Object.keys(grouped).sort((a,b) => {
+      if (a==='__nd__') return 1; if (b==='__nd__') return -1;
+      const ma=a.match(/\d+/), mb=b.match(/\d+/);
+      return (ma?parseInt(ma[0]):500) - (mb?parseInt(mb[0]):500);
+    });
     const cellStyle='padding:8px 10px;border-bottom:1px solid #e6f4fb;font-size:13px;vertical-align:top;white-space:pre-wrap;word-break:break-word;';
+    const thStyle='background:#f4fafd;padding:7px 10px;text-align:left;border-bottom:2px solid #cce8f5;font-size:10px;text-transform:uppercase;';
     let h='';
     keys.forEach(k => {
       if (k!=='__nd__') {
-        const d=new Date(k+'T12:00:00');
-        h+='<div style="margin:18px 0 5px;font-size:13px;font-weight:700;color:#0d1f2d;border-bottom:2px solid #00b4d8;padding-bottom:5px;">'+DAYS[d.getDay()]+' '+formatDate(k)+'</div>';
+        h+='<div style="margin:18px 0 5px;font-size:13px;font-weight:700;color:#0d1f2d;border-bottom:2px solid #00b4d8;padding-bottom:5px;">'+k+'</div>';
       }
       h+='<table style="width:100%;border-collapse:collapse;margin-bottom:4px;"><thead><tr>'
-        +'<th style="width:100px;background:#f4fafd;padding:7px 10px;text-align:left;border-bottom:2px solid #cce8f5;font-size:10px;text-transform:uppercase;">Horario</th>'
-        +'<th style="background:#f4fafd;padding:7px 10px;text-align:left;border-bottom:2px solid #cce8f5;font-size:10px;text-transform:uppercase;">Actividad</th>'
+        +'<th style="width:90px;'+thStyle+'">Horario</th>'
+        +'<th style="width:80px;'+thStyle+'">Duración</th>'
+        +'<th style="'+thStyle+'">Actividad</th>'
         +'</tr></thead><tbody>';
       (grouped[k]||[]).forEach(r => {
-        h+='<tr><td style="'+cellStyle+'">'+(r.hora||'')+'</td><td style="'+cellStyle+'">'+(r.asunto||'')+'</td></tr>';
+        h+='<tr><td style="'+cellStyle+'">'+(r.hora||'')+'</td><td style="'+cellStyle+'">'+(r.duracion||'')+'</td><td style="'+cellStyle+'">'+(r.asunto||'')+'</td></tr>';
       });
       h+='</tbody></table>';
     });
