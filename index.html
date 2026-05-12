@@ -1628,8 +1628,11 @@ function renderCronoHTML(type, items, ev) {
         <tbody>`;
       dayItems.forEach(({ r, i }) => {
         html += `<tr>
-          <td><input class="crono-cell-input" value="${(r.hora||'').replace(/"/g,'&quot;')}" placeholder="20:00" onchange="editCrono('${type}',${i},'hora',this.value)"></td>
-          <td><input class="crono-cell-input" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min" onchange="editCrono('${type}',${i},'duracion',this.value)"></td>
+          <td><input class="crono-cell-input" value="${(r.hora||'').replace(/"/g,'&quot;')}" placeholder="20:00"
+            onblur="this.value=parseHora(this.value);editCrono('${type}',${i},'hora',this.value)"
+            onchange="editCrono('${type}',${i},'hora',this.value)"></td>
+          <td><input class="crono-cell-input" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min"
+            onchange="editCrono('${type}',${i},'duracion',this.value)"></td>
           <td><input class="crono-cell-input" value="${(r.asunto||'').replace(/"/g,'&quot;')}" placeholder="Actividad..." onchange="editCrono('${type}',${i},'asunto',this.value)"></td>
           ${notesCol ? `<td><input class="crono-cell-input" value="${(r.notas||'').replace(/"/g,'&quot;')}" placeholder="Nota..." onchange="editCrono('${type}',${i},'notas',this.value)"></td>` : ''}
           <td><button class="btn btn-red btn-sm" onclick="removeCrono('${type}',${i})" style="padding:2px 6px;">✕</button></td>
@@ -1640,7 +1643,9 @@ function renderCronoHTML(type, items, ev) {
 
     // Add-row input bar
     html += `<div class="crono-add-row">
-      <input type="text" class="crono-cell-input" id="${inputPrefix}-hora" placeholder="Horario" style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">
+      <input type="text" class="crono-cell-input" id="${inputPrefix}-hora" placeholder="20:00 ó 2000"
+        style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
+        onblur="this.value=parseHora(this.value)">
       <input type="text" class="crono-cell-input" id="${inputPrefix}-duracion" placeholder="Duración" style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">
       <input type="text" class="crono-cell-input" id="${inputPrefix}-asunto" placeholder="+ Actividad..." style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
         onkeydown="if(event.key==='Enter'){addCronoRow('${type}','${key}','${inputPrefix}');event.preventDefault();}">
@@ -1671,6 +1676,69 @@ async function addCronoDay(type) {
   renderCronoTable(type, ev[key], ev);
 }
 // Add a row inside a specific day block
+// ─── Hora helpers ───────────────────────────────────────────
+// Accepts: "2000", "20.00", "20,00", "20:00", "20h00", "2000hs" → "20:00"
+function parseHora(raw) {
+  if (!raw) return '';
+  const s = raw.toString().replace(/hs\.?$/i,'').replace(/h/i,':').replace(/[.,]/g,':').replace(/\s/g,'');
+  // pure digits: 4 → "HH:MM", 3 → "H:MM", 1-2 → "HH:00"
+  const digits = s.replace(/:/g,'');
+  if (/^\d+$/.test(digits)) {
+    if (digits.length <= 2) return digits.padStart(2,'0') + ':00';
+    if (digits.length === 3) return digits[0] + ':' + digits.slice(1);
+    return digits.slice(0,2) + ':' + digits.slice(2,4);
+  }
+  // already has colon
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m) return m[1].padStart(2,'0') + ':' + m[2];
+  return s;
+}
+
+// Returns total minutes from "HH:MM"
+function horaToMins(h) {
+  const m = (h||'').match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  let hh = parseInt(m[1]), mm = parseInt(m[2]);
+  if (hh < 8) hh += 24; // treat 00-07 as next-day
+  return hh * 60 + mm;
+}
+
+// Parses duration: "40 min", "1.30", "1:30", "1h30", "90" (minutes) → minutes
+function parseDuracion(raw) {
+  if (!raw) return null;
+  const s = raw.toString().toLowerCase().replace(/\s/g,'');
+  // "Xh" or "Xhrs"
+  const hOnly = s.match(/^(\d+)h(rs?)?$/);
+  if (hOnly) return parseInt(hOnly[1]) * 60;
+  // "XhYm" or "Xh30"
+  const hm = s.match(/^(\d+)h(\d+)/);
+  if (hm) return parseInt(hm[1]) * 60 + parseInt(hm[2]);
+  // "X.Y" or "X:Y" or "X,Y" — X hours Y mins
+  const dot = s.match(/^(\d+)[.:](\d{2})$/);
+  if (dot) return parseInt(dot[1]) * 60 + parseInt(dot[2]);
+  // plain number = minutes
+  const plain = s.match(/^(\d+)(min|m)?$/);
+  if (plain) return parseInt(plain[1]);
+  return null;
+}
+
+// Returns "HH:MM" string, handling overnight (>= 24h → wrap to 00:xx)
+function minsToHora(totalMins) {
+  totalMins = totalMins % (24 * 60); // wrap at midnight (next day shown as 00:xx)
+  const hh = Math.floor(totalMins / 60) % 24;
+  const mm = totalMins % 60;
+  return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+}
+
+// Given a formatted hora "HH:MM" and a raw duracion string, returns next "HH:MM"
+function nextHora(hora, duracionRaw) {
+  const startMins = horaToMins(hora);
+  const durMins = parseDuracion(duracionRaw);
+  if (startMins === null || durMins === null) return '';
+  return minsToHora(startMins + durMins);
+}
+// ─────────────────────────────────────────────────────────────
+
 async function addCronoRow(type, dia, prefix) {
   const horaEl = document.getElementById(prefix + '-hora');
   const durEl = document.getElementById(prefix + '-duracion');
@@ -1681,18 +1749,23 @@ async function addCronoRow(type, dia, prefix) {
   const ev = eventsData.find(e => e.id === currentEventId);
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   ev[key] = ev[key] || [];
+  const rawHora = horaEl ? horaEl.value.trim() : '';
+  const rawDur  = durEl  ? durEl.value.trim()  : '';
+  const horaFmt = parseHora(rawHora);
   const item = {
     dia: dia === '__noday__' ? '' : dia,
-    hora: horaEl ? horaEl.value.trim() : '',
-    duracion: durEl ? durEl.value.trim() : '',
+    hora: horaFmt,
+    duracion: rawDur,
     asunto
   };
   if (type === 'interno') item.notas = notasEl ? notasEl.value.trim() : '';
   ev[key].push(item);
   sortCrono(ev[key]);
-  if (horaEl) horaEl.value = '';
+  // Pre-fill next hora = this hora + duracion
+  const siguiente = nextHora(horaFmt, rawDur);
+  if (horaEl) horaEl.value = siguiente;
   if (durEl) durEl.value = '';
-  if (asuntoEl) asuntoEl.value = '';
+  if (asuntoEl) { asuntoEl.value = ''; asuntoEl.focus(); }
   if (notasEl) notasEl.value = '';
   await saveEventDB(ev);
   renderCronoTable(type, ev[key], ev);
