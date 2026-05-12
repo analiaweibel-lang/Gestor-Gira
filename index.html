@@ -229,12 +229,23 @@
   .crono-day-input:focus { background:var(--brand-dim); border-radius:4px; }
   .crono-day-input::placeholder { color:var(--text3); font-family:'DM Sans',sans-serif; font-weight:400; font-size:13px; }
   .crono-day-label { font-size:12px; font-weight:600; color:var(--text2); }
-  .crono-add-row { display:flex; gap:6px; padding:8px 12px; background:var(--surface2); border-top:1px solid var(--border); flex-wrap:wrap; align-items:center; }
-  .crono-table tbody tr { position:relative; transition:background .12s; }
-  .crono-table tbody tr:hover { background:var(--surface2); }
-  .crono-del-btn { opacity:0; background:none; border:none; cursor:pointer; color:var(--text3); font-size:15px; padding:2px 5px; border-radius:4px; transition:opacity .15s, color .15s, background .15s; line-height:1; }
-  .crono-table tbody tr:hover .crono-del-btn { opacity:1; }
-  .crono-del-btn:hover { color:var(--red); background:rgba(192,57,43,0.10); }
+  .crono-add-row { display:flex; gap:6px; padding:10px 12px; background:var(--surface2); border-top:2px dashed var(--border); flex-wrap:wrap; align-items:center; }
+
+  /* CRONO ROWS — clean read, click-to-edit, fast delete */
+  .crono-row { transition:background .1s; }
+  .crono-row:hover { background:#f0f8fd; }
+  .crono-row td { padding:10px 12px; vertical-align:middle; }
+  .crono-td-hora .crono-text { font-weight:700; color:var(--text); font-size:15px; font-variant-numeric:tabular-nums; letter-spacing:.3px; }
+  .crono-td-dur .crono-text { font-size:12px; color:var(--text3); background:var(--surface2); border-radius:10px; padding:2px 8px; display:inline-block; }
+  .crono-td-main .crono-text { font-size:13px; color:var(--text); }
+  .crono-text { cursor:text; display:block; min-height:20px; border-radius:4px; padding:1px 3px; transition:background .12s; }
+  .crono-text:hover { background:var(--brand-dim); }
+  .crono-edit-input { width:100% !important; display:none; }
+
+  /* DELETE — always visible but subtle, red on hover */
+  .crono-del-btn { background:none; border:none; cursor:pointer; color:var(--border); font-size:17px; line-height:1; padding:3px 6px; border-radius:6px; transition:color .12s, background .12s; display:block; }
+  .crono-row:hover .crono-del-btn { color:var(--text3); }
+  .crono-del-btn:hover { color:var(--red) !important; background:rgba(192,57,43,0.10); }
 
   /* CRONO editable */
   .crono-cell-input { background:transparent; border:none; border-bottom:1px dashed transparent; outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); width:100%; padding:0; transition:border-color .15s; }
@@ -1306,6 +1317,8 @@ function renderSheets(ev) {
     `<button class="add-sheet-btn" onclick="addBlankSheet()" title="Nueva hoja en blanco">＋</button>`;
   document.getElementById('sheet-contents').innerHTML =
     all.map((s,i) => `<div class="sheet-content ${i===currentSheetIdx?'active':''}" id="scontent-${i}">${renderSheetContent(s,ev,i)}</div>`).join('');
+  // Bind click-to-edit on crono rows
+  ['interno','cliente'].forEach(t => bindCronoClicks(document.getElementById(`crono-${t}-body`)));
 }
 
 function switchSheet(i) { const ev = eventsData.find(e => e.id === currentEventId); currentSheetIdx = i; renderSheets(ev); }
@@ -1624,24 +1637,46 @@ function renderCronoHTML(type, items, ev) {
     if (dayItems.length) {
       html += `<table class="crono-table">
         <thead><tr>
-          <th style="width:90px;">Horario</th>
-          <th style="width:90px;">Duración</th>
+          <th style="width:80px;">Horario</th>
+          <th style="width:80px;">Duración</th>
           <th>Actividad</th>
-          ${notesCol ? '<th style="width:160px;">Notas</th>' : ''}
+          ${notesCol ? '<th style="width:150px;">Notas</th>' : ''}
           <th style="width:32px;"></th>
         </tr></thead>
         <tbody>`;
       dayItems.forEach(({ r, i }) => {
-        html += `<tr>
-          <td><input class="crono-cell-input" value="${(r.hora||'').replace(/"/g,'&quot;')}" placeholder="20:00"
-            onblur="this.value=parseHora(this.value);editCrono('${type}',${i},'hora',this.value)"
-            onchange="editCrono('${type}',${i},'hora',this.value)"></td>
-          <td><input class="crono-cell-input" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min"
-            onblur="editCrono('${type}',${i},'duracion',this.value)"
-            onchange="editCrono('${type}',${i},'duracion',this.value)"></td>
-          <td><input class="crono-cell-input" value="${(r.asunto||'').replace(/"/g,'&quot;')}" placeholder="Actividad..." onchange="editCrono('${type}',${i},'asunto',this.value)"></td>
-          ${notesCol ? `<td><input class="crono-cell-input" value="${(r.notas||'').replace(/"/g,'&quot;')}" placeholder="Nota..." onchange="editCrono('${type}',${i},'notas',this.value)"></td>` : ''}
-          <td style="width:28px;text-align:center;"><button class="crono-del-btn" onclick="removeCrono('${type}',${i})" title="Eliminar">✕</button></td>
+        html += `<tr class="crono-row">
+          <td class="crono-td-hora">
+            <span class="crono-text">${r.hora||'—'}</span>
+            <input class="crono-cell-input crono-edit-input" value="${(r.hora||'').replace(/"/g,'&quot;')}" placeholder="20:00"
+              onblur="this.value=parseHora(this.value);editCrono('${type}',${i},'hora',this.value);cronoToggleEdit(this,false)"
+              onkeydown="if(event.key==='Enter')this.blur()"
+              style="display:none;">
+          </td>
+          <td class="crono-td-dur">
+            <span class="crono-text">${r.duracion||'—'}</span>
+            <input class="crono-cell-input crono-edit-input" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min"
+              onblur="editCrono('${type}',${i},'duracion',this.value);cronoToggleEdit(this,false)"
+              onkeydown="if(event.key==='Enter')this.blur()"
+              style="display:none;">
+          </td>
+          <td class="crono-td-main">
+            <span class="crono-text">${(r.asunto||'').replace(/</g,'&lt;')}</span>
+            <input class="crono-cell-input crono-edit-input" value="${(r.asunto||'').replace(/"/g,'&quot;')}" placeholder="Actividad..."
+              onblur="editCrono('${type}',${i},'asunto',this.value);cronoToggleEdit(this,false)"
+              onkeydown="if(event.key==='Enter')this.blur()"
+              style="display:none;">
+          </td>
+          ${notesCol ? `<td class="crono-td-notes">
+            <span class="crono-text" style="color:var(--text2);font-size:12px;">${(r.notas||'').replace(/</g,'&lt;')}</span>
+            <input class="crono-cell-input crono-edit-input" value="${(r.notas||'').replace(/"/g,'&quot;')}" placeholder="Nota..."
+              onblur="editCrono('${type}',${i},'notas',this.value);cronoToggleEdit(this,false)"
+              onkeydown="if(event.key==='Enter')this.blur()"
+              style="display:none;">
+          </td>` : ''}
+          <td style="width:32px;text-align:center;">
+            <button class="crono-del-btn" onclick="removeCrono('${type}',${i})" title="Eliminar">✕</button>
+          </td>
         </tr>`;
       });
       html += '</tbody></table>';
@@ -1668,6 +1703,15 @@ function renderCronoHTML(type, items, ev) {
 
   return allKeys.map((key, idx) => blockHtml(key, idx)).join('');
 }
+
+function renderCronoTable(type, items, ev) {
+  const evRef = ev || eventsData.find(e => e.id === currentEventId);
+  const el = document.getElementById(`crono-${type}-body`);
+  if (el) {
+    el.innerHTML = renderCronoHTML(type, items, evRef);
+    bindCronoClicks(el);
+  }
+}
 // Add a new empty day block at the bottom
 async function addCronoDay(type) {
   const ev = eventsData.find(e => e.id === currentEventId);
@@ -1685,6 +1729,38 @@ async function addCronoDay(type) {
   renderCronoTable(type, ev[key], ev);
 }
 // Add a row inside a specific day block
+// Click a crono-text span → hide span, show input, focus it
+function cronoToggleEdit(inputEl, show) {
+  const td = inputEl.closest('td');
+  if (!td) return;
+  const span = td.querySelector('.crono-text');
+  if (show) {
+    if (span) span.style.display = 'none';
+    inputEl.style.display = 'block';
+    inputEl.focus();
+    inputEl.select();
+  } else {
+    inputEl.style.display = 'none';
+    // Update span text with new value
+    if (span) {
+      span.textContent = inputEl.value || span.textContent;
+      span.style.display = 'block';
+    }
+  }
+}
+// Make crono-text spans clickable (delegated — called after render)
+function bindCronoClicks(container) {
+  if (!container) return;
+  container.querySelectorAll('.crono-text').forEach(span => {
+    span.onclick = function() {
+      const td = span.closest('td');
+      if (!td) return;
+      const inp = td.querySelector('.crono-edit-input');
+      if (inp) cronoToggleEdit(inp, true);
+    };
+  });
+}
+
 // ─── Hora helpers ───────────────────────────────────────────
 // Pre-fills the hora field of the add-row when user finishes entering duracion
 function prefillNextHora(prefix) {
