@@ -1202,7 +1202,7 @@ function renderKanban() {
         <span class="col-count">${cards.length}</span>
       </div>
       ${cards.map(e => `
-        <div class="kanban-card" onclick="openEventDetail(${e.id})">
+        <div class="kanban-card" onclick="openEventDetail('${e.id}')">
           <div class="card-title-wrap">
             <input class="card-title-input" value="${(e.nombre||'').replace(/"/g,'&quot;')}"
               onclick="event.stopPropagation()"
@@ -1218,7 +1218,7 @@ function renderKanban() {
               ${(e.proveedores||[]).length ? `<span class="card-tag">🤝 ${(e.proveedores||[]).length} prov.</span>` : ''}
               ${(e.sheets||[]).length ? `<span class="card-tag">📄 ${(e.sheets||[]).length} notas</span>` : ''}
             </div>
-            <button class="btn btn-red btn-sm" onclick="event.stopPropagation();confirmDeleteEvent(${e.id})" style="padding:3px 7px;font-size:10px;">🗑</button>
+            <button class="btn btn-red btn-sm" onclick="event.stopPropagation();confirmDeleteEvent('${e.id}')" style="padding:3px 7px;font-size:10px;">🗑</button>
           </div>
         </div>
       `).join('')}
@@ -1267,7 +1267,7 @@ async function saveNewEvent() {
 }
 
 async function saveCardTitle(id, value) {
-  const ev = eventsData.find(e => e.id === id); if (!ev) return;
+  const ev = eventsData.find(e => String(e.id) === String(id)); if (!ev) return;
   ev.nombre = value.trim() || ev.nombre;
   await saveEventDB(ev);
   renderKanban();
@@ -1276,7 +1276,7 @@ async function saveCardTitle(id, value) {
 async function confirmDeleteEvent(id) {
   if (!confirm('¿Eliminar este evento?')) return;
   await deleteEventDB(id);
-  eventsData = eventsData.filter(e => e.id !== id);
+  eventsData = eventsData.filter(e => String(e.id) !== String(id));
   renderKanban();
 }
 
@@ -1297,8 +1297,8 @@ const BUILTIN_SHEETS = [
 ];
 
 function openEventDetail(id) {
-  const ev = eventsData.find(e => e.id === id); if (!ev) return;
-  currentEventId = id; currentSheetIdx = 0;
+  const ev = eventsData.find(e => String(e.id) === String(id)); if (!ev) return;
+  currentEventId = ev.id; currentSheetIdx = 0;
   document.getElementById('ed-title').value = ev.nombre || '';
   document.getElementById('ed-empresa').value = ev.empresa || '';
   document.getElementById('ed-fecha').value = ev.fecha || '';
