@@ -230,6 +230,11 @@
   .crono-day-input::placeholder { color:var(--text3); font-family:'DM Sans',sans-serif; font-weight:400; font-size:13px; }
   .crono-day-label { font-size:12px; font-weight:600; color:var(--text2); }
   .crono-add-row { display:flex; gap:7px; padding:8px 12px; background:var(--surface2); border-top:1px solid var(--border); flex-wrap:wrap; align-items:center; }
+  .crono-table tbody tr { position:relative; transition:background .12s; }
+  .crono-table tbody tr:hover { background:var(--surface2); }
+  .crono-del-btn { opacity:0; background:none; border:none; cursor:pointer; color:var(--text3); font-size:15px; padding:2px 5px; border-radius:4px; transition:opacity .15s, color .15s, background .15s; line-height:1; }
+  .crono-table tbody tr:hover .crono-del-btn { opacity:1; }
+  .crono-del-btn:hover { color:var(--red); background:rgba(192,57,43,0.10); }
 
   /* CRONO editable */
   .crono-cell-input { background:transparent; border:none; border-bottom:1px dashed transparent; outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); width:100%; padding:0; transition:border-color .15s; }
@@ -1632,10 +1637,11 @@ function renderCronoHTML(type, items, ev) {
             onblur="this.value=parseHora(this.value);editCrono('${type}',${i},'hora',this.value)"
             onchange="editCrono('${type}',${i},'hora',this.value)"></td>
           <td><input class="crono-cell-input" value="${(r.duracion||'').replace(/"/g,'&quot;')}" placeholder="40 min"
+            onblur="editCrono('${type}',${i},'duracion',this.value)"
             onchange="editCrono('${type}',${i},'duracion',this.value)"></td>
           <td><input class="crono-cell-input" value="${(r.asunto||'').replace(/"/g,'&quot;')}" placeholder="Actividad..." onchange="editCrono('${type}',${i},'asunto',this.value)"></td>
           ${notesCol ? `<td><input class="crono-cell-input" value="${(r.notas||'').replace(/"/g,'&quot;')}" placeholder="Nota..." onchange="editCrono('${type}',${i},'notas',this.value)"></td>` : ''}
-          <td><button class="btn btn-red btn-sm" onclick="removeCrono('${type}',${i})" style="padding:2px 6px;">✕</button></td>
+          <td style="width:28px;text-align:center;"><button class="crono-del-btn" onclick="removeCrono('${type}',${i})" title="Eliminar">✕</button></td>
         </tr>`;
       });
       html += '</tbody></table>';
@@ -1646,7 +1652,9 @@ function renderCronoHTML(type, items, ev) {
       <input type="text" class="crono-cell-input" id="${inputPrefix}-hora" placeholder="20:00 ó 2000"
         style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
         onblur="this.value=parseHora(this.value)">
-      <input type="text" class="crono-cell-input" id="${inputPrefix}-duracion" placeholder="Duración" style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">
+      <input type="text" class="crono-cell-input" id="${inputPrefix}-duracion" placeholder="40 min"
+        style="max-width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
+        onblur="prefillNextHora('${inputPrefix}')">
       <input type="text" class="crono-cell-input" id="${inputPrefix}-asunto" placeholder="+ Actividad..." style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;"
         onkeydown="if(event.key==='Enter'){addCronoRow('${type}','${key}','${inputPrefix}');event.preventDefault();}">
       ${notesCol ? `<input type="text" class="crono-cell-input" id="${inputPrefix}-notas" placeholder="Notas" style="max-width:140px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;">` : ''}
@@ -1677,6 +1685,19 @@ async function addCronoDay(type) {
 }
 // Add a row inside a specific day block
 // ─── Hora helpers ───────────────────────────────────────────
+// Pre-fills the hora field of the add-row when user finishes entering duracion
+function prefillNextHora(prefix) {
+  const horaEl = document.getElementById(prefix + '-hora');
+  const durEl  = document.getElementById(prefix + '-duracion');
+  if (!horaEl || !durEl) return;
+  // Format hora first
+  const horaFmt = parseHora(horaEl.value);
+  if (horaFmt) horaEl.value = horaFmt;
+  // Calculate next
+  const sig = nextHora(horaFmt, durEl.value.trim());
+  // Store as data so addCronoRow can use it after save
+  horaEl.dataset.nextHora = sig;
+}
 // Accepts: "2000", "20.00", "20,00", "20:00", "20h00", "2000hs" → "20:00"
 function parseHora(raw) {
   if (!raw) return '';
@@ -1763,7 +1784,7 @@ async function addCronoRow(type, dia, prefix) {
   sortCrono(ev[key]);
   // Pre-fill next hora = this hora + duracion
   const siguiente = nextHora(horaFmt, rawDur);
-  if (horaEl) horaEl.value = siguiente;
+  if (horaEl) { horaEl.value = siguiente; delete horaEl.dataset.nextHora; }
   if (durEl) durEl.value = '';
   if (asuntoEl) { asuntoEl.value = ''; asuntoEl.focus(); }
   if (notasEl) notasEl.value = '';
@@ -1839,7 +1860,9 @@ async function editCrono(type, i, field, value) {
 async function removeCrono(type, i) {
   const ev = eventsData.find(e => e.id === currentEventId);
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
-  ev[key].splice(i,1); await saveEventDB(ev); renderCronoTable(type, ev[key], ev);
+  ev[key].splice(i, 1);
+  renderCronoTable(type, ev[key], ev); // instant visual update
+  await saveEventDB(ev);              // save in background
 }
 function downloadCrono(type) {
   const ev = eventsData.find(e => e.id === currentEventId);
