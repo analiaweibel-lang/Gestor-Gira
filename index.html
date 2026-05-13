@@ -1206,9 +1206,9 @@ function renderKanban() {
           <div class="card-title-wrap">
             <input class="card-title-input" value="${(e.nombre||'').replace(/"/g,'&quot;')}"
               onclick="event.stopPropagation()"
-              onblur="saveCardTitle(${e.id}, this.value)"
+              onblur="saveCardTitle('${e.id}', this.value)"
               onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
-            <span class="card-edit-icon">✏️</span>
+            <span class="card-edit-icon" onclick="event.stopPropagation();openEventDetail('${e.id}')">✏️</span>
           </div>
           ${e.empresa ? `<div class="card-empresa">🏢 ${e.empresa}</div>` : ''}
           ${e.fecha ? `<div class="card-fecha">📅 ${formatDate(e.fecha)}</div>` : ''}
@@ -1322,8 +1322,6 @@ function renderSheets(ev) {
     `<button class="add-sheet-btn" onclick="addBlankSheet()" title="Nueva hoja en blanco">＋</button>`;
   document.getElementById('sheet-contents').innerHTML =
     all.map((s,i) => `<div class="sheet-content ${i===currentSheetIdx?'active':''}" id="scontent-${i}">${renderSheetContent(s,ev,i)}</div>`).join('');
-  // Bind click-to-edit on crono rows
-  ['interno','cliente'].forEach(t => bindCronoClicks(document.getElementById(`crono-${t}-body`)));
 }
 
 function switchSheet(i) { const ev = eventsData.find(e => e.id === currentEventId); currentSheetIdx = i; renderSheets(ev); }
