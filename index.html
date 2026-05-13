@@ -1613,7 +1613,8 @@ function renderCronoHTML(type, items, ev) {
 
   function blockHtml(key, blockIdx) {
     const dayItems = grouped[key] || [];
-    const p = `${type}-b${blockIdx}`;          // prefix for this block's add-row inputs
+    const safeKey = key.replace(/[^a-z0-9]/gi,'_');
+    const p = `${type}_${safeKey}`;          // stable prefix based on day key
     const displayLabel = key === '__noday__' ? '' : key;
 
     let html = `<div class="crono-block">`;
@@ -1700,13 +1701,13 @@ async function cronoAddRow(type, dia, p) {
   const nEl = document.getElementById(p+'-n');
   const asunto = aEl ? aEl.value.trim() : '';
   if (!asunto) { if (aEl) aEl.focus(); return; }
-  const ev = eventsData.find(e => e.id === currentEventId);
+  const ev = eventsData.find(e => String(e.id) === String(currentEventId));
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   ev[key] = ev[key] || [];
   const rawHora = hEl ? hEl.value.trim() : '';
   const rawDur  = dEl ? dEl.value.trim() : '';
   const horaFmt = parseHora(rawHora) || rawHora;
-  const sig = nextHora(horaFmt, rawDur);   // calculate BEFORE render
+  const sig = nextHora(horaFmt, rawDur);   // calculate BEFORE any render
   ev[key].push({
     dia: dia === '__noday__' ? '' : dia,
     hora: horaFmt,
@@ -1715,19 +1716,21 @@ async function cronoAddRow(type, dia, p) {
     notas: nEl ? nEl.value.trim() : ''
   });
   sortCrono(ev[key]);
-  saveEventDB(ev);                          // fire-and-forget
-  renderCronoTable(type, ev[key], ev);      // re-render
-  // After re-render grab NEW elements and pre-fill next hora
-  const newH = document.getElementById(p+'-h');
-  const newD = document.getElementById(p+'-d');
-  const newA = document.getElementById(p+'-a');
-  const newN = document.getElementById(p+'-n');
+  saveEventDB(ev);
+  // Re-render and THEN set next hora using the stable prefix
+  renderCronoTable(type, ev[key], ev);
+  // The prefix is based on the day key (stable after sort since key doesn't change)
+  const safeKey = dia.replace(/[^a-z0-9]/gi,'_');
+  const stableP = `${type}_${safeKey}`;
+  const newH = document.getElementById(stableP+'-h');
+  const newD = document.getElementById(stableP+'-d');
+  const newA = document.getElementById(stableP+'-a');
+  const newN = document.getElementById(stableP+'-n');
+  const newHint = document.getElementById(stableP+'-hint');
   if (newH) newH.value = sig;
   if (newD) newD.value = '';
   if (newA) { newA.value = ''; newA.focus(); }
   if (newN) newN.value = '';
-  // Update hint
-  const newHint = document.getElementById(p+'-hint');
   if (newHint) newHint.textContent = '';
 }
 
