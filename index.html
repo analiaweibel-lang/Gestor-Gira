@@ -374,6 +374,7 @@
     <button onclick="showSection(event,'eventos')">🎭 Organización de Eventos</button>
     <button onclick="showSection(event,'tareas')">✅ Tareas</button>
     <button onclick="showSection(event,'proveedores-global')">🤝 Proveedores</button>
+    <button onclick="showSection(event,'locaciones-global')">📍 Locaciones</button>
     <button onclick="showSection(event,'calendario')">📅 Calendario</button>
   </nav>
   <div class="sync-badge">
@@ -510,6 +511,36 @@
     <div class="locaciones-grid" id="provglobal-grid">
       <!-- renderizado por JS -->
     </div>
+  </section>
+
+
+  <!-- LOCACIONES GLOBAL -->
+  <section id="locaciones-global" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div>
+        <div class="page-title">Locaciones</div>
+        <div class="page-sub">Base de datos de espacios · estado, capacidad y contacto</div>
+      </div>
+      <button class="btn btn-brand" onclick="openNewLocGlobalModal()">+ Nueva locación</button>
+    </div>
+    <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-num c" id="stat-lg-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Confirmadas</div><div class="stat-num g" id="stat-lg-confirmadas">—</div></div>
+      <div class="stat-card"><div class="stat-label">En proceso</div><div class="stat-num b" id="stat-lg-proceso">—</div></div>
+      <div class="stat-card"><div class="stat-label">Rechazadas</div><div class="stat-num" style="color:var(--red)" id="stat-lg-rechazadas">—</div></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" class="search-box" placeholder="🔍  Buscar locación..." id="lg-search" oninput="renderLocGlobal()">
+      <select class="filter-select" id="lg-estado-filter" onchange="renderLocGlobal()">
+        <option value="">Todos los estados</option>
+        <option>✅ Confirmado</option>
+        <option>🔄 En proceso</option>
+        <option>📅 Falta disponibilidad</option>
+        <option>👥 Falta capacidad</option>
+        <option>❌ Rechazado</option>
+      </select>
+    </div>
+    <div class="locaciones-grid" id="locglobal-grid"></div>
   </section>
 
   <!-- CALENDARIO -->
@@ -713,6 +744,39 @@
   </div>
 </div>
 
+
+<!-- MODAL: Nueva Locación Global -->
+<div class="modal-overlay" id="new-locglobal-modal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-title" id="locglobal-modal-title">Nueva Locación</div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label class="form-label">Nombre *</label>
+        <input type="text" class="form-input" id="lg-nombre" placeholder="Nombre del espacio o salón"></div>
+      <div class="form-group"><label class="form-label">Lugar / Barrio / Ciudad</label>
+        <input type="text" class="form-input" id="lg-lugar" placeholder="Ej: Palermo, CABA"></div>
+      <div class="form-group"><label class="form-label">Capacidad (personas)</label>
+        <input type="number" class="form-input" id="lg-capacidad" placeholder="Ej: 200" min="1"></div>
+      <div class="form-group form-full"><label class="form-label">Dirección</label>
+        <input type="text" class="form-input" id="lg-direccion" placeholder="Calle, número, piso..."></div>
+      <div class="form-group form-full"><label class="form-label">Estado</label>
+        <select class="form-select-input" id="lg-estado">
+          <option>🔄 En proceso</option>
+          <option>✅ Confirmado</option>
+          <option>📅 Falta disponibilidad</option>
+          <option>👥 Falta capacidad</option>
+          <option>❌ Rechazado</option>
+        </select>
+      </div>
+      <div class="form-group form-full"><label class="form-label">Notas</label>
+        <textarea class="form-textarea" id="lg-notas" placeholder="Experiencia previa, precio, condiciones, restricciones..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('new-locglobal-modal')">Cancelar</button>
+      <button class="btn btn-brand" onclick="saveLocGlobal()">Guardar locación</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Nuevo Proveedor Global -->
 <div class="modal-overlay" id="new-provglobal-modal">
   <div class="modal" style="max-width:680px;">
@@ -803,6 +867,8 @@ let tareasData = [];
 let locacionesData = [];
 let provGlobalData = [];
 let editingProvGlobalId = null;
+let locGlobalData = [];
+let editingLocGlobalId = null;
 let filtered = [];
 let currentPage = 1;
 const PER_PAGE = 25;
@@ -889,7 +955,8 @@ async function loadEvents() {
       cronoCliente: e.crono_cliente || [],
       proveedores: e.proveedores || [],
       sheets: e.sheets || [],
-      archivos: e.archivos || []
+      archivos: e.archivos || [],
+      responsable: e.responsable || ''
     }));
   } catch(e) {
     const s = localStorage.getItem('gira_events_v1');
@@ -906,6 +973,7 @@ async function saveEventDB(ev) {
       estado: ev.estado, descripcion: ev.descripcion || '', notas: ev.notas || '',
       checklist: ev.checklist || [], crono_interno: ev.cronoInterno || [],
       crono_cliente: ev.cronoCliente || [], proveedores: ev.proveedores || [], sheets: ev.sheets || [],
+      responsable: ev.responsable || null,
       personas: ev.personas || null, tipo: ev.tipo || '',
       fecha_armado: ev.fecha_armado || null, fecha_desarmado: ev.fecha_desarmado || null,
       armado: ev.armado || '', menu: ev.menu || '', menu_especial: ev.menu_especial || '',
@@ -1042,6 +1110,7 @@ function showSection(evt, id) {
   else if (id === 'tareas') { loadEvents().then(() => loadTareas().then(renderTareas)); }
   else if (id === 'locaciones') { loadLocaciones().then(renderLocaciones); loadEvents(); }
   else if (id === 'proveedores-global') { loadProvGlobal().then(renderProvGlobal); }
+  else if (id === 'locaciones-global') { loadLocGlobal().then(renderLocGlobal); }
   else if (id === 'calendario') { loadEvents().then(renderCalendario); }
   else stopAutoRefresh();
 }
@@ -1362,6 +1431,14 @@ async function saveBlankSheet(idx, val) {
 function renderSheetContent(sheet, ev, sheetIdx) {
   if (sheet.type === 'general') return `
     <div class="info-grid">
+      <div class="info-field"><label>Responsable</label>
+        <select id="ed-responsable" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;width:100%;" onchange="autosaveEvent()">
+          <option value="">Sin asignar</option>
+          <option ${ev.responsable==='Ani'?'selected':''}>Ani</option>
+          <option ${ev.responsable==='Cori'?'selected':''}>Cori</option>
+          <option ${ev.responsable==='Otro'?'selected':''}>Otro</option>
+        </select>
+      </div>
       <div class="info-field"><label>Cantidad de personas</label><input type="number" id="ed-personas" value="${ev.personas||''}" placeholder="Ej: 150" onchange="autosaveEvent()"></div>
       <div class="info-field"><label>Tipo de evento</label>
         <select id="ed-tipo" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;width:100%;" onchange="autosaveEvent()">
@@ -1523,6 +1600,7 @@ function autosaveEvent() {
     if (g('ed-notas') !== undefined) ev.notas = g('ed-notas');
     if (g('ed-empresa') !== undefined) ev.empresa = g('ed-empresa');
     if (g('ed-fecha') !== undefined) ev.fecha = g('ed-fecha');
+    if (g('ed-responsable') !== undefined) ev.responsable = g('ed-responsable');
     if (g('ed-personas') !== undefined) ev.personas = g('ed-personas');
     if (g('ed-tipo') !== undefined) ev.tipo = g('ed-tipo');
     if (g('ed-fecha-armado') !== undefined) ev.fecha_armado = g('ed-fecha-armado');
@@ -2758,6 +2836,156 @@ function renderProvGlobal() {
   if (tot) tot.textContent = provGlobalData.length;
   if (cats) cats.textContent = [...new Set(provGlobalData.map(p=>p.categoria).filter(Boolean))].length;
   if (cuit) cuit.textContent = provGlobalData.filter(p=>p.cuit).length;
+}
+
+
+// ═══════════════════════════════════════════
+//  LOCACIONES GLOBAL
+// ═══════════════════════════════════════════
+async function loadLocGlobal() {
+  try {
+    const data = await sbFetch('gira_locaciones_global?order=nombre.asc&limit=1000');
+    locGlobalData = data || [];
+  } catch(e) {
+    console.error('loadLocGlobal:', e);
+    locGlobalData = [];
+    toast('Error al cargar locaciones', 'err');
+  }
+}
+
+async function saveLocGlobalDB(obj, id) {
+  setSyncStatus('syncing', 'Guardando...');
+  try {
+    if (id) {
+      await sbFetch('gira_locaciones_global?id=eq.'+id, {method:'PATCH', prefer:'return=minimal', body:obj});
+      const idx = locGlobalData.findIndex(l => l.id === id);
+      if (idx >= 0) locGlobalData[idx] = {...locGlobalData[idx], ...obj};
+    } else {
+      const res = await sbFetch('gira_locaciones_global', {method:'POST', body:obj});
+      if (res && res[0]) locGlobalData.push(res[0]);
+    }
+    setSyncStatus('ok', 'Guardado ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Error');
+    throw e;
+  }
+}
+
+function openNewLocGlobalModal(loc) {
+  editingLocGlobalId = loc ? loc.id : null;
+  document.getElementById('locglobal-modal-title').textContent = loc ? 'Editar locación' : 'Nueva locación';
+  document.getElementById('lg-nombre').value    = loc ? loc.nombre    || '' : '';
+  document.getElementById('lg-lugar').value     = loc ? loc.lugar     || '' : '';
+  document.getElementById('lg-capacidad').value = loc ? loc.capacidad || '' : '';
+  document.getElementById('lg-direccion').value = loc ? loc.direccion || '' : '';
+  document.getElementById('lg-estado').value    = loc ? loc.estado    || '🔄 En proceso' : '🔄 En proceso';
+  document.getElementById('lg-notas').value     = loc ? loc.notas     || '' : '';
+  document.getElementById('new-locglobal-modal').classList.add('open');
+}
+
+async function saveLocGlobal() {
+  const nombre = document.getElementById('lg-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+  const obj = {
+    nombre,
+    lugar:     document.getElementById('lg-lugar').value.trim(),
+    capacidad: parseInt(document.getElementById('lg-capacidad').value) || null,
+    direccion: document.getElementById('lg-direccion').value.trim(),
+    estado:    document.getElementById('lg-estado').value,
+    notas:     document.getElementById('lg-notas').value.trim()
+  };
+  try {
+    await saveLocGlobalDB(obj, editingLocGlobalId);
+    await loadLocGlobal();
+    closeModal('new-locglobal-modal');
+    renderLocGlobal();
+    toast('Locación guardada', 'ok');
+  } catch(e) { toast('Error al guardar', 'err'); }
+}
+
+async function eliminarLocGlobal(id) {
+  if (!confirm('¿Eliminar esta locación?')) return;
+  try {
+    await sbFetch('gira_locaciones_global?id=eq.'+id, {method:'DELETE', prefer:'return=minimal'});
+    locGlobalData = locGlobalData.filter(l => l.id !== id);
+    renderLocGlobal();
+    toast('Locación eliminada');
+  } catch(e) { toast('Error al eliminar', 'err'); }
+}
+
+const LG_ESTADO_CONFIG = {
+  '✅ Confirmado':         { cls:'badge-confirmado-prov', color:'var(--green)' },
+  '🔄 En proceso':         { cls:'badge-en-revision',    color:'var(--orange)' },
+  '📅 Falta disponibilidad':{ cls:'badge-solicitado',    color:'var(--blue)' },
+  '👥 Falta capacidad':    { cls:'badge-solicitado',     color:'var(--blue)' },
+  '❌ Rechazado':          { cls:'badge-rechazado',      color:'var(--red)' },
+};
+
+function renderLocGlobal() {
+  const q   = (document.getElementById('lg-search')?.value || '').toLowerCase();
+  const fst = document.getElementById('lg-estado-filter')?.value || '';
+  const filtered = locGlobalData.filter(l => {
+    const matchQ  = !q  || (l.nombre||'').toLowerCase().includes(q) || (l.lugar||'').toLowerCase().includes(q) || (l.direccion||'').toLowerCase().includes(q);
+    const matchSt = !fst || l.estado === fst;
+    return matchQ && matchSt;
+  });
+  const grid = document.getElementById('locglobal-grid');
+  if (!grid) return;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);">
+      <div style="font-size:40px;margin-bottom:12px;">📍</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;">No hay locaciones aún</div>
+      <div style="font-size:13px;">Agregá la primera para empezar</div>
+    </div>`;
+  } else {
+    grid.innerHTML = filtered.map(l => {
+      const cfg   = LG_ESTADO_CONFIG[l.estado] || { cls:'badge-en-revision', color:'var(--orange)' };
+      const safeId = l.id;
+      return `<div class="loc-card">
+        <div class="loc-card-header">
+          <div>
+            <div class="loc-nombre">${(l.nombre||'').replace(/</g,'&lt;')}</div>
+            ${l.lugar ? `<div class="loc-tipo">📍 ${l.lugar}</div>` : ''}
+          </div>
+          <span class="badge ${cfg.cls}" style="white-space:nowrap;flex-shrink:0;">${l.estado||''}</span>
+        </div>
+        ${l.direccion ? `<div class="loc-detail"><span class="loc-detail-icon">🗺</span><span>${l.direccion.replace(/</g,'&lt;')}</span></div>` : ''}
+        ${l.capacidad ? `<div class="loc-detail"><span class="loc-detail-icon">👥</span><span>${l.capacidad} personas</span></div>` : ''}
+        ${l.notas ? `<div class="loc-detail" style="margin-top:6px;"><span class="loc-detail-icon">📝</span><span style="color:var(--text2);font-size:12px;line-height:1.5;">${l.notas.substring(0,120).replace(/</g,'&lt;')}${l.notas.length>120?'…':''}</span></div>` : ''}
+        <div style="margin-top:10px;">
+          <select class="filter-select" style="font-size:11px;padding:4px 8px;width:100%;"
+            onchange="editLocGlobalEstado('${safeId}',this.value)">
+            ${Object.keys(LG_ESTADO_CONFIG).map(s => `<option ${l.estado===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="loc-actions" style="margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="openNewLocGlobalModal(locGlobalData.find(x=>x.id==='${safeId}'))" style="flex:1;">✏️ Editar</button>
+          <button class="btn btn-red btn-sm" onclick="eliminarLocGlobal('${safeId}')">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Stats
+  const tot = document.getElementById('stat-lg-total');
+  const con = document.getElementById('stat-lg-confirmadas');
+  const pro = document.getElementById('stat-lg-proceso');
+  const rec = document.getElementById('stat-lg-rechazadas');
+  if (tot) tot.textContent = locGlobalData.length;
+  if (con) con.textContent = locGlobalData.filter(l => l.estado === '✅ Confirmado').length;
+  if (pro) pro.textContent = locGlobalData.filter(l => l.estado === '🔄 En proceso').length;
+  if (rec) rec.textContent = locGlobalData.filter(l => l.estado === '❌ Rechazado').length;
+}
+
+async function editLocGlobalEstado(id, estado) {
+  try {
+    await sbFetch('gira_locaciones_global?id=eq.'+id, {method:'PATCH', prefer:'return=minimal', body:{estado}});
+    const idx = locGlobalData.findIndex(l => l.id === id);
+    if (idx >= 0) locGlobalData[idx].estado = estado;
+    renderLocGlobal();
+    toast('Estado actualizado', 'ok');
+  } catch(e) { toast('Error al actualizar estado', 'err'); }
 }
 
 // ═══════════════════════════════════════════
