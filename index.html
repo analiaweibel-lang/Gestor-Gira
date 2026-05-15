@@ -956,7 +956,8 @@ async function loadEvents() {
       proveedores: e.proveedores || [],
       sheets: e.sheets || [],
       archivos: e.archivos || [],
-      responsable: e.responsable || ''
+      responsable: e.responsable || '',
+      locaciones_ev: e.locaciones_ev || []
     }));
   } catch(e) {
     const s = localStorage.getItem('gira_events_v1');
@@ -978,7 +979,8 @@ async function saveEventDB(ev) {
       fecha_armado: ev.fecha_armado || null, fecha_desarmado: ev.fecha_desarmado || null,
       armado: ev.armado || '', menu: ev.menu || '', menu_especial: ev.menu_especial || '',
       equipamiento: ev.equipamiento || '', ambientacion: ev.ambientacion || '',
-      archivos: ev.archivos || []
+      archivos: ev.archivos || [],
+      locaciones_ev: ev.locaciones_ev || []
     };
     if (ev.id) {
       await sbFetch('gira_eventos?id=eq.' + ev.id, { method: 'PATCH', prefer: 'return=minimal', body: payload });
@@ -1359,6 +1361,7 @@ const BUILTIN_SHEETS = [
   { id:'crono-interno', label:'🗓 Crono. Interno',   type:'crono-interno' },
   { id:'crono-cliente', label:'📤 Crono. Cliente',   type:'crono-cliente' },
   { id:'proveedores',   label:'🤝 Proveedores',      type:'proveedores' },
+  { id:'locaciones-ev', label:'📍 Locaciones',       type:'locaciones-ev' },
   { id:'armado',        label:'🔧 Armado',           type:'armado' },
   { id:'menu',          label:'🍽 Menú',             type:'menu' },
   { id:'equipamiento',  label:'🎤 Equip. Técnico',   type:'equipamiento' },
@@ -1522,6 +1525,33 @@ function renderSheetContent(sheet, ev, sheetIdx) {
       <div class="form-group" style="margin-top:2px;">
         <label class="form-label" style="margin-bottom:4px;">Descripción del servicio</label>
         <textarea class="form-input" id="prov-descripcion" placeholder="Detallá el servicio, presupuesto, condiciones, incluye/no incluye..." style="resize:vertical;min-height:70px;line-height:1.5;font-family:'DM Sans',sans-serif;"></textarea>
+      </div>
+    </div>`;
+
+  if (sheet.type === 'locaciones-ev') return `
+    <div class="section-label">Locaciones del evento</div>
+    <div id="ev-locaciones-list">${renderEvLocacionesHTML(ev)}</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:10px;">
+      <div class="section-label" style="margin-top:0;">Agregar locación</div>
+      <div class="input-row" style="flex-wrap:wrap;gap:7px;margin-bottom:8px;">
+        <input type="text" class="form-input" id="evloc-nombre" placeholder="Nombre del espacio *">
+        <input type="text" class="form-input" id="evloc-lugar" placeholder="Lugar / Barrio" style="max-width:180px;">
+        <input type="number" class="form-input" id="evloc-capacidad" placeholder="Capacidad" style="max-width:110px;" min="1">
+      </div>
+      <div class="input-row" style="flex-wrap:wrap;gap:7px;margin-bottom:8px;">
+        <input type="text" class="form-input" id="evloc-direccion" placeholder="Dirección">
+        <select class="form-select-input" id="evloc-estado" style="max-width:210px;">
+          <option>🔄 En proceso</option>
+          <option>✅ Confirmado</option>
+          <option>📅 Falta disponibilidad</option>
+          <option>👥 Falta capacidad</option>
+          <option>❌ Rechazado</option>
+        </select>
+        <button class="btn btn-brand btn-sm" onclick="addEvLocacion()">+ Agregar</button>
+      </div>
+      <div class="form-group" style="margin-top:2px;">
+        <label class="form-label" style="margin-bottom:4px;">Notas</label>
+        <textarea class="form-input" id="evloc-notas" placeholder="Precio, condiciones, restricciones..." style="resize:vertical;min-height:60px;line-height:1.5;font-family:'DM Sans',sans-serif;"></textarea>
       </div>
     </div>`;
 
@@ -2690,8 +2720,92 @@ function renderCalendario() {
 
 
 // ═══════════════════════════════════════════
-//  PROVEEDORES GLOBAL
+//  LOCACIONES DENTRO DE EVENTO
 // ═══════════════════════════════════════════
+const EVLOC_ESTADO_CFG = {
+  '✅ Confirmado':          { cls:'badge-confirmado-prov' },
+  '🔄 En proceso':          { cls:'badge-en-revision'    },
+  '📅 Falta disponibilidad':{ cls:'badge-solicitado'     },
+  '👥 Falta capacidad':     { cls:'badge-solicitado'     },
+  '❌ Rechazado':           { cls:'badge-rechazado'      },
+};
+
+function renderEvLocacionesHTML(ev) {
+  const locs = ev.locaciones_ev || [];
+  if (!locs.length) return '<p style="color:var(--text3);font-size:13px;padding:8px 0;">Sin locaciones agregadas aún</p>';
+  return locs.map((l, i) => {
+    const cfg = EVLOC_ESTADO_CFG[l.estado] || { cls:'badge-en-revision' };
+    return `<div class="proveedor-item">
+      <div class="prov-row1">
+        <div class="prov-icon">📍</div>
+        <div class="prov-info">
+          <div class="prov-name">${(l.nombre||'').replace(/</g,'&lt;')}</div>
+          <div class="prov-servicio">${[l.lugar, l.direccion, l.capacidad?l.capacidad+' personas':''].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+          <select class="filter-select" style="font-size:11px;padding:4px 7px;" onchange="editEvLocEstado(${i},this.value)">
+            ${Object.keys(EVLOC_ESTADO_CFG).map(s=>`<option ${l.estado===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <button class="btn btn-red btn-sm" style="padding:4px 8px;" onclick="removeEvLocacion(${i})">✕</button>
+        </div>
+      </div>
+      ${l.notas ? `<div class="prov-desc"><textarea class="prov-desc-edit" placeholder="Notas..." onchange="editEvLocNotas(${i},this.value)" rows="1" oninput="autoResizeTextarea(this)">${(l.notas||'').replace(/</g,'&lt;')}</textarea></div>` : `<div class="prov-desc"><textarea class="prov-desc-edit" placeholder="Notas..." onchange="editEvLocNotas(${i},this.value)" rows="1" oninput="autoResizeTextarea(this)"></textarea></div>`}
+      <div class="prov-footer">
+        <span class="badge ${cfg.cls}">${l.estado||''}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderEvLocaciones(ev) {
+  const el = document.getElementById('ev-locaciones-list');
+  if (el) { el.innerHTML = renderEvLocacionesHTML(ev); el.querySelectorAll('.prov-desc-edit').forEach(t => autoResizeTextarea(t)); }
+}
+
+async function addEvLocacion() {
+  const nombre = document.getElementById('evloc-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+  const ev = eventsData.find(e => String(e.id) === String(currentEventId));
+  ev.locaciones_ev = ev.locaciones_ev || [];
+  ev.locaciones_ev.push({
+    nombre,
+    lugar:     document.getElementById('evloc-lugar').value.trim(),
+    capacidad: parseInt(document.getElementById('evloc-capacidad').value) || null,
+    direccion: document.getElementById('evloc-direccion').value.trim(),
+    estado:    document.getElementById('evloc-estado').value,
+    notas:     document.getElementById('evloc-notas').value.trim()
+  });
+  ['evloc-nombre','evloc-lugar','evloc-capacidad','evloc-direccion','evloc-notas'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  await saveEventDB(ev);
+  renderEvLocaciones(ev);
+  toast('Locación agregada', 'ok');
+}
+
+async function removeEvLocacion(i) {
+  const ev = eventsData.find(e => String(e.id) === String(currentEventId));
+  ev.locaciones_ev.splice(i, 1);
+  await saveEventDB(ev);
+  renderEvLocaciones(ev);
+}
+
+async function editEvLocEstado(i, estado) {
+  const ev = eventsData.find(e => String(e.id) === String(currentEventId));
+  if (ev.locaciones_ev && ev.locaciones_ev[i]) {
+    ev.locaciones_ev[i].estado = estado;
+    await saveEventDB(ev);
+    renderEvLocaciones(ev);
+  }
+}
+
+async function editEvLocNotas(i, val) {
+  const ev = eventsData.find(e => String(e.id) === String(currentEventId));
+  if (ev.locaciones_ev && ev.locaciones_ev[i] !== undefined) {
+    ev.locaciones_ev[i].notas = val;
+    await saveEventDB(ev);
+  }
+}
+
+
 async function loadProvGlobal() {
   try {
     const data = await sbFetch('gira_proveedores?order=nombre.asc&limit=1000');
