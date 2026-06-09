@@ -354,6 +354,70 @@
   .cal-more { font-size:10px; color:var(--text3); padding:1px 4px; cursor:pointer; }
   .cal-last-row { border-bottom:none; }
 
+  /* DRAG & DROP */
+  .kanban-card[draggable=true] { cursor:grab; }
+  .kanban-card.dragging { opacity:.4; transform:scale(.96); cursor:grabbing; }
+  .kanban-card.drag-over-top { border-top:3px solid var(--brand); margin-top:-2px; }
+  .kanban-card.drag-over-bottom { border-bottom:3px solid var(--brand); margin-bottom:-2px; }
+  .kanban-col.drag-col-over { background:var(--brand-dim); }
+
+  /* TAREAS REDESIGN */
+  .tarea-card-new { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; transition:all .15s; position:relative; overflow:hidden; }
+  .tarea-card-new::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; }
+  .tarea-card-new.t-pendiente::before { background:var(--text3); }
+  .tarea-card-new.t-progreso::before { background:var(--orange); }
+  .tarea-card-new.t-hecho::before { background:var(--green); }
+  .tarea-card-new.t-vencida::before { background:var(--red); }
+  .tarea-card-new.t-vencida { border-color:rgba(220,38,38,0.3); }
+  .tarea-card-new:hover { box-shadow:var(--shadow-md); transform:translateY(-1px); }
+  .tarea-card-new .t-header { display:flex; align-items:flex-start; gap:10px; }
+  .tarea-card-new .t-check { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); cursor:pointer; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; transition:all .15s; font-size:11px; color:transparent; }
+  .tarea-card-new .t-check:hover { border-color:var(--green); color:var(--green); }
+  .tarea-card-new .t-check.checked { background:var(--green); border-color:var(--green); color:#fff; }
+  .tarea-card-new .t-titulo { font-size:14px; font-weight:600; color:var(--text); flex:1; line-height:1.4; }
+  .tarea-card-new.t-hecho .t-titulo { text-decoration:line-through; color:var(--text3); }
+  .tarea-card-new .t-desc { font-size:12px; color:var(--text2); margin:6px 0 0 30px; line-height:1.5; }
+  .tarea-card-new .t-footer { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 0 30px; }
+  .tarea-card-new .t-badge { font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; }
+  .tarea-card-new .t-date { font-size:11px; display:flex; align-items:center; gap:3px; }
+  .tarea-card-new .t-actions { display:flex; gap:4px; margin-left:auto; opacity:0; transition:opacity .15s; }
+  .tarea-card-new:hover .t-actions { opacity:1; }
+  .t-date-vencida { color:var(--red); font-weight:700; }
+  .t-date-proxima { color:var(--orange); font-weight:600; }
+  .t-date-ok { color:var(--text3); }
+
+  /* CLIENTES - empresas agrupadas */
+  .empresa-group { border:1px solid var(--border); border-radius:var(--radius); margin-bottom:10px; overflow:hidden; box-shadow:var(--shadow-sm); }
+  .empresa-group-header { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#fff; cursor:pointer; transition:background .15s; }
+  .empresa-group-header:hover { background:var(--surface2); }
+  .empresa-group-header .eg-name { font-weight:700; font-size:14px; color:var(--text); flex:1; }
+  .empresa-group-header .eg-badge { font-size:11px; }
+  .empresa-group-header .eg-rubro { font-size:12px; color:var(--text3); }
+  .empresa-group-contacts { background:var(--surface2); border-top:1px solid var(--border); }
+  .empresa-contact-row { display:flex; align-items:center; gap:10px; padding:10px 16px 10px 28px; border-bottom:1px solid var(--border); font-size:13px; transition:background .1s; }
+  .empresa-contact-row:last-child { border-bottom:none; }
+  .empresa-contact-row:hover { background:var(--surface3); }
+  .ec-name { font-weight:500; color:var(--text); min-width:140px; }
+  .ec-email { color:var(--text2); min-width:180px; font-size:12px; }
+  .ec-tel { color:var(--text3); font-size:12px; min-width:120px; }
+  .ec-ultimo { font-size:11px; color:var(--text3); min-width:130px; }
+  .ec-stale { color:var(--red); font-weight:600; }
+
+  /* CONTACT TRACKING */
+  .contact-action { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:var(--radius-sm); text-decoration:none; font-size:14px; transition:all .15s; cursor:pointer; border:none; background:none; }
+  .contact-action:hover { transform:scale(1.1); }
+  .ca-mail { background:rgba(37,99,235,0.08); color:var(--blue); }
+  .ca-mail:hover { background:rgba(37,99,235,0.18); }
+  .ca-wa { background:rgba(22,163,74,0.08); color:var(--green); }
+  .ca-wa:hover { background:rgba(22,163,74,0.18); }
+  .ca-phone { background:rgba(124,58,237,0.08); color:var(--purple); }
+  .ca-phone:hover { background:rgba(124,58,237,0.18); }
+
+  /* SORT BAR */
+  .sort-bar { display:flex; gap:6px; align-items:center; margin-left:auto; }
+  .sort-btn { background:none; border:1px solid var(--border); color:var(--text3); padding:5px 10px; border-radius:var(--radius-sm); cursor:pointer; font-family:'DM Sans',sans-serif; font-size:11px; font-weight:500; transition:all .15s; }
+  .sort-btn:hover, .sort-btn.active { border-color:var(--brand); color:var(--brand); background:var(--brand-dim); }
+
   @media(max-width:900px) {
     .tareas-board { grid-template-columns:1fr; }
     .locaciones-grid { grid-template-columns:1fr; }
@@ -402,6 +466,12 @@
     </div>
     <div class="toolbar">
       <input type="text" class="search-box" placeholder="🔍  Buscar empresa, contacto o mail..." id="crm-search" oninput="applyFilters()">
+      <div class="sort-bar">
+        <span style="font-size:11px;color:var(--text3);">Ordenar:</span>
+        <button class="sort-btn active" onclick="sortCRM('nombre',this)">A-Z</button>
+        <button class="sort-btn" onclick="sortCRM('contacto',this)">Últ. contacto</button>
+        <button class="sort-btn" onclick="sortCRM('potencial',this)">Potencial</button>
+      </div>
       <select class="filter-select" id="f-cliente" onchange="applyFilters()">
         <option value="">Todos</option>
         <option value="si">✅ Clientes</option>
@@ -984,7 +1054,8 @@ async function loadEvents() {
       sheets: e.sheets || [],
       archivos: e.archivos || [],
       responsable: e.responsable || '',
-      locaciones_ev: e.locaciones_ev || []
+      locaciones_ev: e.locaciones_ev || [],
+      orden: e.orden || 0
     }));
   } catch(e) {
     const s = localStorage.getItem('gira_events_v1');
@@ -1007,7 +1078,8 @@ async function saveEventDB(ev) {
       armado: ev.armado || '', menu: ev.menu || '', menu_especial: ev.menu_especial || '',
       equipamiento: ev.equipamiento || '', ambientacion: ev.ambientacion || '',
       archivos: ev.archivos || [],
-      locaciones_ev: ev.locaciones_ev || []
+      locaciones_ev: ev.locaciones_ev || [],
+      orden: ev.orden || 0
     };
     if (ev.id) {
       await sbFetch('gira_eventos?id=eq.' + ev.id, { method: 'PATCH', prefer: 'return=minimal', body: payload });
@@ -1159,6 +1231,18 @@ function applyFilters() {
     const matchA = !fa || c.area === fa;
     return matchQ && matchC && matchP && matchA;
   });
+  // Sort
+  if (crmSortField === 'contacto') {
+    filtered.sort((a,b) => {
+      const da = a.ultimo_contacto_fecha || '', db = b.ultimo_contacto_fecha || '';
+      return db.localeCompare(da); // most recent first
+    });
+  } else if (crmSortField === 'potencial') {
+    const order = { ALTO:0, MEDIO:1, BAJO:2, '':3 };
+    filtered.sort((a,b) => (order[a.potencial]||3) - (order[b.potencial]||3));
+  } else {
+    filtered.sort((a,b) => (a.empresa||'').localeCompare(b.empresa||''));
+  }
   currentPage = 1;
   renderTable();
   updateStats();
@@ -1188,11 +1272,15 @@ function renderTable() {
       <td><span class="badge ${c.esCliente ? 'badge-cliente' : 'badge-prospecto'}">${c.esCliente ? '✅ Cliente' : 'Prospecto'}</span></td>
       <td>${bp ? `<span class="badge ${bp}">${c.potencial}</span>` : '—'}</td>
       <td style="font-size:12px;color:var(--text2);">${c.area || '—'}</td>
-      <td style="font-size:12px;color:var(--text3);white-space:nowrap;">${c.ultimo_contacto ? formatDate(c.ultimo_contacto) : '—'}</td>
+      <td style="font-size:11px;white-space:nowrap;">
+        ${c.ultimo_contacto_fecha ? `<div style="color:var(--text2);">${new Date(c.ultimo_contacto_fecha).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</div><div style="color:var(--text3);font-size:10px;">${c.ultimo_contacto_tipo||''}</div>` : `<span style="color:var(--text3);">—</span>`}
+        ${c.ultimo_contacto_fecha && (Date.now()-new Date(c.ultimo_contacto_fecha).getTime())>30*86400000 ? '<div style="color:var(--red);font-size:10px;font-weight:600;">⚠ +30 días</div>' : ''}
+      </td>
       <td style="font-size:12px;color:var(--text3);max-width:140px;" title="${c.notas||''}">${notasTrunc || '—'}</td>
       <td><div class="contact-btns">
-        ${emailClean ? `<a class="mail-btn" href="mailto:${emailClean}" title="Enviar mail">✉</a>` : ''}
-        ${telClean ? `<a class="wa-btn" href="https://wa.me/${telClean.replace('+','')}" target="_blank" title="WhatsApp">📱</a>` : ''}
+        ${emailClean ? `<a class="contact-action ca-mail" href="mailto:${emailClean}" onclick="trackContact(${c.id},'Email')" title="Enviar mail">✉</a>` : ''}
+        ${telClean ? `<a class="contact-action ca-wa" href="https://wa.me/${telClean.replace('+','')}" target="_blank" onclick="trackContact(${c.id},'WhatsApp')" title="WhatsApp">💬</a>` : ''}
+        ${telClean ? `<a class="contact-action ca-phone" href="tel:${telClean}" onclick="trackContact(${c.id},'Llamada')" title="Llamar">📞</a>` : ''}
       </div></td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="openEditModal(${c.id})">✏️</button>
@@ -1297,14 +1385,16 @@ const ESTADOS = [
 function renderKanban() {
   const board = document.getElementById('kanban-board');
   board.innerHTML = ESTADOS.map(est => {
-    const cards = eventsData.filter(e => e.estado === est.id);
+    const cards = eventsData.filter(e => e.estado === est.id).sort((a,b) => (a.orden||0) - (b.orden||0));
     return `<div class="kanban-col">
       <div class="col-header">
         <div class="col-title"><span class="col-dot" style="background:${est.color}"></span><span style="color:${est.color}">${est.emoji} ${est.label}</span></div>
         <span class="col-count">${cards.length}</span>
       </div>
       ${cards.map(e => `
-        <div class="kanban-card" onclick="openEventDetail('${e.id}')">
+        <div class="kanban-card" draggable="true" onclick="openEventDetail('${e.id}')"
+          ondragstart="dragStart(event,'${e.id}')" ondragend="dragEnd(event)"
+          ondragover="dragOver(event)" ondrop="dropCard(event,'${e.id}','${est.id}')">
           <div class="card-title-wrap">
             <input class="card-title-input" value="${(e.nombre||'').replace(/"/g,'&quot;')}"
               onclick="event.stopPropagation()"
@@ -2469,10 +2559,8 @@ function renderTareas() {
   const q = (document.getElementById('tareas-search')?.value || '').toLowerCase();
   const fr = document.getElementById('ft-responsable')?.value || '';
   const fe = document.getElementById('ft-evento')?.value || '';
-
-  const cols = ['pendiente', 'en progreso', 'hecho'];
-  const colLabels = { pendiente: '⏳ Pendiente', 'en progreso': '🔄 En progreso', hecho: '✅ Hecho' };
-  const colColors = { pendiente: 'var(--text3)', 'en progreso': 'var(--orange)', hecho: 'var(--green)' };
+  const today = new Date().toISOString().split('T')[0];
+  const soon = new Date(Date.now() + 3*86400000).toISOString().split('T')[0];
 
   const filtered = tareasData.filter(t => {
     const matchQ = !q || (t.titulo||'').toLowerCase().includes(q) || (t.descripcion||'').toLowerCase().includes(q);
@@ -2481,285 +2569,69 @@ function renderTareas() {
     return matchQ && matchR && matchE;
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  function cardHtml(t) {
+    const isVencida = t.estado !== 'hecho' && t.fecha_limite && t.fecha_limite < today;
+    const isProxima = !isVencida && t.estado !== 'hecho' && t.fecha_limite && t.fecha_limite <= soon;
+    const isHecho = t.estado === 'hecho';
+    const isProg = t.estado === 'en progreso';
+    const cls = isVencida ? 't-vencida' : isHecho ? 't-hecho' : isProg ? 't-progreso' : 't-pendiente';
+    const eventoNombre = eventsData.find(e => String(e.id) === String(t.evento_id))?.nombre || '';
+    const dateClass = isVencida ? 't-date-vencida' : isProxima ? 't-date-proxima' : 't-date-ok';
+    const dateIcon = isVencida ? '🔴' : isProxima ? '🟡' : '📅';
+    return `<div class="tarea-card-new ${cls}">
+      <div class="t-header">
+        <div class="t-check ${isHecho?'checked':''}" onclick="cambiarEstadoTarea('${t.id}','${isHecho?'pendiente':'hecho'}')" title="${isHecho?'Reabrir':'Completar'}">✓</div>
+        <div class="t-titulo">${(t.titulo||'').replace(/</g,'&lt;')}</div>
+      </div>
+      ${t.descripcion ? `<div class="t-desc">${(t.descripcion||'').replace(/</g,'&lt;')}</div>` : ''}
+      <div class="t-footer">
+        ${t.responsable ? `<span class="t-badge badge-${t.responsable.toLowerCase()}">👤 ${t.responsable}</span>` : ''}
+        ${t.fecha_limite ? `<span class="t-date ${dateClass}">${dateIcon} ${formatDate(t.fecha_limite)}${isVencida?' · ¡Vencida!':''}</span>` : ''}
+        ${eventoNombre ? `<span style="font-size:11px;color:var(--text3);">🎭 ${eventoNombre}</span>` : ''}
+        <div class="t-actions">
+          ${!isProg && !isHecho ? `<button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px;" onclick="cambiarEstadoTarea('${t.id}','en progreso')">🔄</button>` : ''}
+          <button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px;" onclick="editarTarea('${t.id}')">✏️</button>
+          <button class="crono-del-btn" style="opacity:1;font-size:14px;" onclick="eliminarTarea('${t.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  const cols = ['pendiente', 'en progreso', 'hecho'];
+  const colLabels = { pendiente:'⏳ Pendientes', 'en progreso':'🔄 En progreso', hecho:'✅ Completadas' };
+  const colColors = { pendiente:'var(--text3)', 'en progreso':'var(--orange)', hecho:'var(--green)' };
 
   const board = document.getElementById('tareas-board');
   if (!board) return;
-  board.innerHTML = cols.map(col => {
-    const items = filtered.filter(t => t.estado === col);
-    const cards = items.map(t => {
-      const realIdx = tareasData.findIndex(x => x.id === t.id);
-      const eventoNombre = eventsData.find(e => String(e.id) === String(t.evento_id))?.nombre || '';
-      let fechaClass = 'ok', fechaLabel = '';
-      if (t.fecha_limite) {
-        if (t.fecha_limite < today && col !== 'hecho') fechaClass = 'vencida';
-        else if (t.fecha_limite <= new Date(Date.now() + 3*86400000).toISOString().split('T')[0]) fechaClass = 'proxima';
-        fechaLabel = formatDate(t.fecha_limite);
-      }
-      const isVencida = col !== 'hecho' && t.fecha_limite && t.fecha_limite < today;
-      return `<div class="tarea-card ${isVencida ? 'vencida' : ''}">
-        <div class="tarea-titulo">${(t.titulo||'').replace(/</g,'&lt;')}</div>
-        ${t.descripcion ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.4;">${(t.descripcion||'').replace(/</g,'&lt;')}</div>` : ''}
-        <div class="tarea-meta">
-          ${t.responsable ? `<span class="badge badge-${t.responsable.toLowerCase()}">👤 ${t.responsable}</span>` : ''}
-          ${fechaLabel ? `<span class="tarea-fecha-vence ${fechaClass}">📅 ${fechaLabel}</span>` : ''}
-          ${eventoNombre ? `<span class="tarea-evento">🎭 ${(eventoNombre||'').replace(/</g,'&lt;')}</span>` : ''}
-        </div>
-        <div class="tarea-actions">
-          ${col !== 'pendiente' ? `<button class="btn btn-outline btn-sm" onclick="cambiarEstadoTarea('${t.id}','pendiente')" title="Pendiente">⏳</button>` : ''}
-          ${col !== 'en progreso' ? `<button class="btn btn-outline btn-sm" onclick="cambiarEstadoTarea('${t.id}','en progreso')" title="En progreso">🔄</button>` : ''}
-          ${col !== 'hecho' ? `<button class="btn btn-green btn-sm" onclick="cambiarEstadoTarea('${t.id}','hecho')" title="Hecho">✅</button>` : ''}
-          <button class="btn btn-outline btn-sm" onclick="editarTarea('${t.id}')" title="Editar">✏️</button>
-          <button class="btn btn-red btn-sm" onclick="eliminarTarea('${t.id}')" title="Eliminar">🗑</button>
-        </div>
-      </div>`;
-    }).join('');
 
-    return `<div class="tarea-col">
-      <div class="tarea-col-header">
-        <div class="tarea-col-title" style="color:${colColors[col]}">${colLabels[col]}</div>
-        <span class="col-count">${items.length}</span>
+  // Separate vencidas
+  const vencidas = filtered.filter(t => t.estado !== 'hecho' && t.fecha_limite && t.fecha_limite < today);
+
+  board.innerHTML =
+    (vencidas.length ? `<div class="tarea-col" style="border-color:rgba(220,38,38,0.3);grid-column:1/-1;">
+      <div class="tarea-col-header" style="border-bottom-color:rgba(220,38,38,0.2);">
+        <div class="tarea-col-title" style="color:var(--red);">🔴 Vencidas</div>
+        <span class="col-count" style="background:rgba(220,38,38,0.08);color:var(--red);border-color:rgba(220,38,38,0.2);">${vencidas.length}</span>
       </div>
-      ${cards || `<div class="empty-col"><div class="empty-icon">🎯</div><div>Sin tareas en esta columna</div></div>`}
-    </div>`;
-  }).join('');
-
-  // Stats
-  document.getElementById('stat-t-total').textContent = tareasData.length;
-  document.getElementById('stat-t-pendientes').textContent = tareasData.filter(t => t.estado === 'pendiente').length;
-  document.getElementById('stat-t-progreso').textContent = tareasData.filter(t => t.estado === 'en progreso').length;
-  document.getElementById('stat-t-hechas').textContent = tareasData.filter(t => t.estado === 'hecho').length;
-}
-
-// ═══════════════════════════════════════════
-//  LOCACIONES
-// ═══════════════════════════════════════════
-function openNewLocacionModal(loc) {
-  editingLocacionId = loc ? loc.id : null;
-  document.getElementById('locacion-modal-title').textContent = loc ? 'Editar locación' : 'Nueva locación';
-  document.getElementById('lc-nombre').value = loc ? loc.nombre || '' : '';
-  document.getElementById('lc-tipo').value = loc ? loc.tipo_espacio || '' : '';
-  document.getElementById('lc-capacidad').value = loc ? loc.capacidad || '' : '';
-  document.getElementById('lc-direccion').value = loc ? loc.direccion || '' : '';
-  document.getElementById('lc-contacto-nombre').value = loc ? loc.contacto_nombre || '' : '';
-  document.getElementById('lc-contacto-tel').value = loc ? loc.contacto_tel || '' : '';
-  document.getElementById('lc-link').value = loc ? loc.link || '' : '';
-  document.getElementById('lc-notas').value = loc ? loc.notas || '' : '';
-  document.getElementById('new-locacion-modal').classList.add('open');
-}
-
-async function saveLocacion() {
-  const nombre = document.getElementById('lc-nombre').value.trim();
-  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
-  const obj = {
-    nombre,
-    tipo_espacio: document.getElementById('lc-tipo').value,
-    capacidad: parseInt(document.getElementById('lc-capacidad').value) || null,
-    direccion: document.getElementById('lc-direccion').value.trim(),
-    contacto_nombre: document.getElementById('lc-contacto-nombre').value.trim(),
-    contacto_tel: document.getElementById('lc-contacto-tel').value.trim(),
-    link: document.getElementById('lc-link').value.trim(),
-    notas: document.getElementById('lc-notas').value.trim()
-  };
-  try {
-    await saveLocacionDB(obj, editingLocacionId);
-    await loadLocaciones();
-    closeModal('new-locacion-modal');
-    renderLocaciones();
-    toast('Locación guardada', 'ok');
-  } catch(e) {
-    toast('Error al guardar locación', 'err');
-  }
-}
-
-async function eliminarLocacion(id) {
-  if (!confirm('¿Eliminar esta locación?')) return;
-  await deleteLocacionDB(id);
-  renderLocaciones();
-  toast('Locación eliminada');
-}
-
-function renderLocaciones() {
-  const q = (document.getElementById('loc-search')?.value || '').toLowerCase();
-  const ft = document.getElementById('fl-tipo')?.value || '';
-
-  const filtered = locacionesData.filter(l => {
-    const matchQ = !q || (l.nombre||'').toLowerCase().includes(q) || (l.direccion||'').toLowerCase().includes(q) || (l.notas||'').toLowerCase().includes(q);
-    const matchT = !ft || l.tipo_espacio === ft;
-    return matchQ && matchT;
-  });
-
-  const grid = document.getElementById('locaciones-grid');
-
-  if (!filtered.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);">
-      <div style="font-size:40px;margin-bottom:12px;">📍</div>
-      <div style="font-size:15px;font-weight:600;margin-bottom:6px;">No hay locaciones aún</div>
-      <div style="font-size:13px;">Agregá la primera para empezar a armar tu base de datos</div>
-    </div>`;
-  } else {
-    grid.innerHTML = filtered.map(l => {
-      const eventosUsados = eventsData.filter(e => (l.usada_en_eventos||[]).includes(e.id));
-      const telClean = (l.contacto_tel||'').replace(/[^0-9+]/g,'');
-      return `<div class="loc-card">
-        <div class="loc-card-header">
-          <div>
-            <div class="loc-nombre">${l.nombre}</div>
-            ${l.tipo_espacio ? `<div class="loc-tipo">${l.tipo_espacio}${l.capacidad?' · hasta '+l.capacidad+' personas':''}</div>` : ''}
-          </div>
-          <div style="display:flex;gap:4px;">
-            ${l.link ? `<a href="${l.link}" target="_blank" class="btn btn-outline btn-sm" title="Ver en web" style="padding:4px 8px;font-size:12px;text-decoration:none;">🔗</a>` : ''}
-          </div>
+      ${vencidas.map(t => cardHtml(t)).join('')}
+    </div>` : '') +
+    cols.map(col => {
+      const items = filtered.filter(t => t.estado === col && !(col !== 'hecho' && t.fecha_limite && t.fecha_limite < today));
+      return `<div class="tarea-col">
+        <div class="tarea-col-header">
+          <div class="tarea-col-title" style="color:${colColors[col]}">${colLabels[col]}</div>
+          <span class="col-count">${items.length}</span>
         </div>
-        ${l.direccion ? `<div class="loc-detail"><span class="loc-detail-icon">📍</span><span>${l.direccion}</span></div>` : ''}
-        ${l.contacto_nombre ? `<div class="loc-detail"><span class="loc-detail-icon">👤</span><span>${l.contacto_nombre}${telClean?` · <a href="https://wa.me/${telClean}" target="_blank" style="color:var(--green);text-decoration:none;">📱 ${l.contacto_tel}</a>`:''}</span></div>` : ''}
-        ${l.notas ? `<div class="loc-detail" style="margin-top:8px;"><span class="loc-detail-icon">📝</span><span style="color:var(--text2);font-size:12px;line-height:1.5;">${l.notas.substring(0,120)}${l.notas.length>120?'…':''}</span></div>` : ''}
-        ${eventosUsados.length ? `<div class="loc-tags">${eventosUsados.slice(0,3).map(e=>`<span class="loc-tag-evento">🎭 ${e.nombre}</span>`).join('')}${eventosUsados.length>3?`<span class="loc-tag-evento">+${eventosUsados.length-3}</span>`:''}</div>` : ''}
-        <div class="loc-actions">
-          <button class="btn btn-outline btn-sm" onclick='openNewLocacionModal(${JSON.stringify(l)})' style="flex:1;">✏️ Editar</button>
-          <button class="btn btn-red btn-sm" onclick="eliminarLocacion(${l.id})">🗑</button>
-        </div>
+        ${items.length ? items.map(t => cardHtml(t)).join('') : '<div class="empty-col"><div class="empty-icon">🎯</div>Sin tareas</div>'}
       </div>`;
     }).join('');
-  }
 
   // Stats
-  document.getElementById('stat-l-total').textContent = locacionesData.length;
-  document.getElementById('stat-l-usadas').textContent = locacionesData.filter(l => (l.usada_en_eventos||[]).length > 0).length;
-  document.getElementById('stat-l-tipos').textContent = [...new Set(locacionesData.map(l=>l.tipo_espacio).filter(Boolean))].length;
-}
-
-// ═══════════════════════════════════════════
-//  INIT
-
-// ═══════════════════════════════════════════
-//  CALENDARIO
-// ═══════════════════════════════════════════
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth(); // 0-indexed
-
-const CAL_COLORS = [
-  { bg:'#e8f7fd', text:'#0077a8', border:'#00b4d8' },
-  { bg:'#eef4ff', text:'#5b4fcf', border:'#7c70ef' },
-  { bg:'#edfbf4', text:'#1a7a4a', border:'#1a9e5c' },
-  { bg:'#fff4ec', text:'#b05a10', border:'#e07c2b' },
-  { bg:'#fef2f2', text:'#991b1b', border:'#c0392b' },
-  { bg:'#fdf4ff', text:'#7e22ce', border:'#9333ea' },
-  { bg:'#fffbeb', text:'#92400e', border:'#d97706' },
-  { bg:'#f0fdf4', text:'#14532d', border:'#22c55e' },
-];
-
-// Assign a stable color per event id
-const _colorCache = {};
-function getEventColor(id) {
-  if (!_colorCache[id]) {
-    const idx = Object.keys(_colorCache).length % CAL_COLORS.length;
-    _colorCache[id] = CAL_COLORS[idx];
-  }
-  return _colorCache[id];
-}
-
-function calGoToday() { calYear = new Date().getFullYear(); calMonth = new Date().getMonth(); renderCalendario(); }
-function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendario(); }
-function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendario(); }
-
-function renderCalendario() {
-  const lbl = document.getElementById('cal-month-label');
-  const grid = document.getElementById('calendario-grid');
-  const legend = document.getElementById('cal-legend');
-  if (!lbl || !grid) return;
-
-  const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  lbl.textContent = MONTHS[calMonth] + ' ' + calYear;
-
-  // Filter events with dates (all states except ejecutado shown, highlight confirmados)
-  const shown = eventsData.filter(e => e.fecha);
-
-  // Build date → events map
-  const dateMap = {};
-  shown.forEach(ev => {
-    const start = ev.fecha;
-    const end = ev.fecha_desarmado || ev.fecha;
-    // Expand range
-    let cur = new Date(start + 'T12:00:00');
-    const endD = new Date(end + 'T12:00:00');
-    while (cur <= endD) {
-      const key = cur.toISOString().split('T')[0];
-      if (!dateMap[key]) dateMap[key] = [];
-      dateMap[key].push(ev);
-      cur.setDate(cur.getDate() + 1);
-    }
-  });
-
-  // Calendar grid
-  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const today = new Date().toISOString().split('T')[0];
-
-  let html = '<div class="cal-grid">';
-  // Day headers
-  DAYS.forEach(d => { html += `<div class="cal-header-cell">${d}</div>`; });
-
-  // Empty cells before first day
-  for (let i = 0; i < firstDay; i++) {
-    const prevDate = new Date(calYear, calMonth, -firstDay + i + 1);
-    html += `<div class="cal-day other-month"><div class="cal-day-num" style="color:var(--text3)">${prevDate.getDate()}</div></div>`;
-  }
-
-  // Days of month
-  const totalCells = firstDay + daysInMonth;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const isToday = dateStr === today;
-    const dayEvents = dateMap[dateStr] || [];
-    const isLastRow = (firstDay + d - 1) >= totalCells - 7;
-
-    html += `<div class="cal-day${isToday?' today':''}${isLastRow?' cal-last-row':''}">`;
-    html += `<div class="cal-day-num">${d}</div>`;
-
-    const maxShow = 3;
-    dayEvents.slice(0, maxShow).forEach(ev => {
-      const col = getEventColor(ev.id);
-      const isConfirmed = ev.estado === 'confirmado' || ev.estado === 'en-produccion';
-      const opacity = isConfirmed ? '1' : '0.65';
-      html += `<div class="cal-event-pill" style="background:${col.bg};color:${col.text};border-left:3px solid ${col.border};opacity:${opacity};"
-        onclick="openEventDetail(${ev.id})" title="${ev.nombre}${ev.empresa?' · '+ev.empresa:''}">
-        ${ev.nombre}
-      </div>`;
-    });
-    if (dayEvents.length > maxShow) {
-      html += `<div class="cal-more">+${dayEvents.length - maxShow} más</div>`;
-    }
-    html += '</div>';
-  }
-
-  // Fill remaining cells
-  const remaining = 7 - ((firstDay + daysInMonth) % 7);
-  if (remaining < 7) {
-    for (let d = 1; d <= remaining; d++) {
-      html += `<div class="cal-day other-month cal-last-row"><div class="cal-day-num" style="color:var(--text3)">${d}</div></div>`;
-    }
-  }
-  html += '</div>';
-  grid.innerHTML = html;
-
-  // Legend
-  const legendEvents = shown.filter(e => {
-    const start = new Date(e.fecha + 'T12:00:00');
-    const end = new Date((e.fecha_desarmado || e.fecha) + 'T12:00:00');
-    const monthStart = new Date(calYear, calMonth, 1);
-    const monthEnd = new Date(calYear, calMonth + 1, 0);
-    return start <= monthEnd && end >= monthStart;
-  });
-  legend.innerHTML = legendEvents.map(ev => {
-    const col = getEventColor(ev.id);
-    return `<div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="openEventDetail(${ev.id})">
-      <div style="width:10px;height:10px;border-radius:2px;background:${col.border};flex-shrink:0;"></div>
-      <span style="font-size:12px;color:var(--text2);">${ev.nombre}${ev.empresa?' · '+ev.empresa:''}</span>
-    </div>`;
-  }).join('');
-  if (!legendEvents.length) legend.innerHTML = '<span style="font-size:12px;color:var(--text3);">No hay eventos este mes</span>';
+  const el = id => document.getElementById(id);
+  if (el('stat-t-total')) el('stat-t-total').textContent = tareasData.length;
+  if (el('stat-t-pendientes')) el('stat-t-pendientes').textContent = tareasData.filter(t=>t.estado==='pendiente').length;
+  if (el('stat-t-progreso')) el('stat-t-progreso').textContent = tareasData.filter(t=>t.estado==='en progreso').length;
+  if (el('stat-t-hechas')) el('stat-t-hechas').textContent = tareasData.filter(t=>t.estado==='hecho').length;
 }
 
 
@@ -3144,6 +3016,163 @@ async function editLocGlobalEstado(id, estado) {
     renderLocGlobal();
     toast('Estado actualizado', 'ok');
   } catch(e) { toast('Error al actualizar estado', 'err'); }
+}
+
+
+// ═══════════════════════════════════════════
+//  DRAG & DROP — kanban cards
+// ═══════════════════════════════════════════
+let draggedEventId = null;
+
+function dragStart(e, id) {
+  draggedEventId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+}
+function dragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.drag-over-top,.drag-over-bottom,.drag-col-over').forEach(el => el.classList.remove('drag-over-top','drag-over-bottom','drag-col-over'));
+  draggedEventId = null;
+}
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // Visual feedback on target card
+  const card = e.target.closest('.kanban-card');
+  if (card && !card.classList.contains('dragging')) {
+    document.querySelectorAll('.drag-over-top,.drag-over-bottom').forEach(el => el.classList.remove('drag-over-top','drag-over-bottom'));
+    const rect = card.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    if (e.clientY < mid) card.classList.add('drag-over-top');
+    else card.classList.add('drag-over-bottom');
+  }
+}
+async function dropCard(e, targetId, colEstado) {
+  e.preventDefault();
+  document.querySelectorAll('.drag-over-top,.drag-over-bottom,.drag-col-over').forEach(el => el.classList.remove('drag-over-top','drag-over-bottom','drag-col-over'));
+  if (!draggedEventId || draggedEventId === targetId) return;
+  const draggedEv = eventsData.find(ev => String(ev.id) === String(draggedEventId));
+  if (!draggedEv) return;
+  // Change estado if dropped in different column
+  draggedEv.estado = colEstado;
+  // Reorder: place dragged before/after target
+  const colEvents = eventsData.filter(ev => ev.estado === colEstado);
+  const targetIdx = colEvents.findIndex(ev => String(ev.id) === String(targetId));
+  // Remove dragged from array
+  const dragIdx = eventsData.findIndex(ev => String(ev.id) === String(draggedEventId));
+  eventsData.splice(dragIdx, 1);
+  // Find where target is now and insert after it
+  const newTargetIdx = eventsData.findIndex(ev => String(ev.id) === String(targetId));
+  eventsData.splice(newTargetIdx + 1, 0, draggedEv);
+  // Update orden for all events in this column
+  eventsData.filter(ev => ev.estado === colEstado).forEach((ev, i) => { ev.orden = i; });
+  renderKanban();
+  // Save all changed events
+  for (const ev of eventsData.filter(ev => ev.estado === colEstado)) {
+    saveEventDB(ev); // fire and forget
+  }
+}
+
+
+// ═══════════════════════════════════════════
+//  CONTACT TRACKING
+// ═══════════════════════════════════════════
+async function trackContact(companyId, tipo) {
+  const now = new Date().toISOString();
+  try {
+    const company = crmData.find(c => c.id === companyId);
+    if (!company) return;
+    const historial = company.historial_contactos || [];
+    historial.unshift({ tipo, fecha: now });
+    if (historial.length > 50) historial.length = 50; // keep last 50
+    await sbFetch('gira_empresas?id=eq.' + companyId, {
+      method: 'PATCH', prefer: 'return=minimal',
+      body: { ultimo_contacto_tipo: tipo, ultimo_contacto_fecha: now, historial_contactos: historial }
+    });
+    company.ultimo_contacto_tipo = tipo;
+    company.ultimo_contacto_fecha = now;
+    company.historial_contactos = historial;
+    // Don't re-render to avoid blocking the link action
+  } catch(e) { /* silent */ }
+}
+
+// ═══════════════════════════════════════════
+//  CRM SORT
+// ═══════════════════════════════════════════
+let crmSortField = 'nombre';
+function sortCRM(field, btn) {
+  crmSortField = field;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  applyFilters();
+}
+
+
+// ═══════════════════════════════════════════
+//  CALENDAR
+// ═══════════════════════════════════════════
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+function calGoToday() { calYear=new Date().getFullYear(); calMonth=new Date().getMonth(); renderCalendario(); }
+function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendario(); }
+function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendario(); }
+const CAL_COLORS=[{bg:'#e8f7fd',text:'#0077a8',border:'#0ea5e9'},{bg:'#eef4ff',text:'#5b4fcf',border:'#7c70ef'},{bg:'#edfbf4',text:'#1a7a4a',border:'#16a34a'},{bg:'#fff4ec',text:'#b05a10',border:'#ea580c'},{bg:'#fef2f2',text:'#991b1b',border:'#dc2626'}];
+const _cc={}; function getEventColor(id){if(!_cc[id])_cc[id]=CAL_COLORS[Object.keys(_cc).length%CAL_COLORS.length];return _cc[id];}
+function renderCalendario(){
+  const lbl=document.getElementById('cal-month-label'), grid=document.getElementById('calendario-grid'), legend=document.getElementById('cal-legend');
+  if(!lbl||!grid) return;
+  const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const DAYS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  lbl.textContent=MONTHS[calMonth]+' '+calYear;
+  const shown=eventsData.filter(e=>e.fecha);
+  const dateMap={};
+  shown.forEach(ev=>{let cur=new Date(ev.fecha+'T12:00:00');const end=new Date((ev.fecha_desarmado||ev.fecha)+'T12:00:00');while(cur<=end){const k=cur.toISOString().split('T')[0];if(!dateMap[k])dateMap[k]=[];dateMap[k].push(ev);cur.setDate(cur.getDate()+1);}});
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date().toISOString().split('T')[0];
+  let html='<div class="cal-grid">';
+  DAYS.forEach(d=>{html+=`<div class="cal-header-cell">${d}</div>`;});
+  for(let i=0;i<firstDay;i++){const pd=new Date(calYear,calMonth,-firstDay+i+1);html+=`<div class="cal-day other-month"><div class="cal-day-num" style="color:var(--text3)">${pd.getDate()}</div></div>`;}
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isToday=ds===today;
+    const dayEvs=dateMap[ds]||[];
+    html+=`<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${d}</div>`;
+    dayEvs.slice(0,3).forEach(ev=>{const col=getEventColor(ev.id);html+=`<div class="cal-event-pill" style="background:${col.bg};color:${col.text};border-left:3px solid ${col.border};" onclick="openEventDetail('${ev.id}')" title="${ev.nombre}">${ev.nombre}</div>`;});
+    if(dayEvs.length>3)html+=`<div class="cal-more">+${dayEvs.length-3}</div>`;
+    html+='</div>';
+  }
+  const rem=7-((firstDay+daysInMonth)%7);if(rem<7)for(let d=1;d<=rem;d++)html+=`<div class="cal-day other-month"><div class="cal-day-num" style="color:var(--text3)">${d}</div></div>`;
+  html+='</div>'; grid.innerHTML=html;
+  const mStart=new Date(calYear,calMonth,1),mEnd=new Date(calYear,calMonth+1,0);
+  const legendEvs=shown.filter(e=>{const s=new Date(e.fecha+'T12:00:00'),en=new Date((e.fecha_desarmado||e.fecha)+'T12:00:00');return s<=mEnd&&en>=mStart;});
+  legend.innerHTML=legendEvs.length?legendEvs.map(ev=>{const col=getEventColor(ev.id);return `<div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="openEventDetail('${ev.id}')"><div style="width:10px;height:10px;border-radius:2px;background:${col.border};"></div><span style="font-size:12px;color:var(--text2);">${ev.nombre}</span></div>`;}).join(''):'<span style="font-size:12px;color:var(--text3);">No hay eventos este mes</span>';
+}
+
+// ═══════════════════════════════════════════
+//  SAVE LOCACION (internal event locacion modal)
+// ═══════════════════════════════════════════
+async function saveLocacion() {
+  const nombre = document.getElementById('lc-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+  const obj = {
+    nombre,
+    tipo_espacio: document.getElementById('lc-tipo').value,
+    capacidad: parseInt(document.getElementById('lc-capacidad').value) || null,
+    direccion: document.getElementById('lc-direccion').value.trim(),
+    contacto_nombre: document.getElementById('lc-contacto-nombre').value.trim(),
+    contacto_tel: document.getElementById('lc-contacto-tel').value.trim(),
+    link: document.getElementById('lc-link').value.trim(),
+    notas: document.getElementById('lc-notas').value.trim()
+  };
+  try {
+    await saveLocacionDB(obj, editingLocacionId);
+    await loadLocaciones();
+    closeModal('new-locacion-modal');
+    renderLocaciones();
+    toast('Locación guardada', 'ok');
+  } catch(e) { toast('Error al guardar', 'err'); }
 }
 
 // ═══════════════════════════════════════════
