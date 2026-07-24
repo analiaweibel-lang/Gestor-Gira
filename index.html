@@ -194,6 +194,21 @@
   .notas-area { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:13px; min-height:120px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none; width:100%; resize:vertical; line-height:1.6; }
   .notas-area:focus { border-color:var(--brand); }
 
+  /* RICH TEXT FIELDS */
+  .rich-toolbar { display:flex; align-items:center; gap:4px; padding:0 2px 6px; }
+  .rt-btn { width:25px; height:25px; border:none; background:var(--surface3); border-radius:6px; cursor:pointer; font-size:12px; color:var(--text2); display:flex; align-items:center; justify-content:center; line-height:1; transition:background .15s,color .15s; }
+  .rt-btn:hover { background:var(--brand-dim); color:var(--brand); }
+  .rt-colors { display:flex; align-items:center; gap:4px; margin-left:6px; padding-left:8px; border-left:1px solid var(--border); }
+  .rt-color { width:15px; height:15px; border-radius:50%; border:1px solid rgba(0,0,0,0.12); cursor:pointer; padding:0; }
+  .rich-editable:empty:before { content:attr(data-placeholder); color:var(--text3); }
+
+  /* GENERAL — CONSOLIDATED CARDS */
+  .general-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 22px; margin-top:16px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:16px; }
+  .general-card-section .section-label { margin-top:0; }
+  .notas-internas-card { background:#fdf8ef; border:1px solid #f0dfb8; border-radius:var(--radius-lg); padding:20px 22px; margin-top:16px; }
+  .notas-internas-card .section-label { margin-top:0; color:#a9762b; }
+  .private-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:#a9762b; background:#fbedca; padding:3px 9px; border-radius:20px; font-weight:700; text-transform:none; letter-spacing:0; margin-left:8px; }
+
   /* CHECKLIST */
   .checklist-item { display:flex; align-items:center; gap:9px; padding:9px 11px; background:var(--surface2); border-radius:8px; margin-bottom:7px; border:1px solid var(--border); }
   .checklist-item input[type="checkbox"] { width:15px; height:15px; cursor:pointer; accent-color:var(--brand); flex-shrink:0; }
@@ -743,8 +758,16 @@
       <div style="flex:1;">
         <input type="text" id="ed-title" style="background:transparent;border:none;border-bottom:2px dashed transparent;outline:none;font-family:'DM Serif Display',serif;font-size:22px;color:var(--brand);width:100%;cursor:text;transition:border-color .2s;" onfocus="this.style.borderBottomColor='var(--brand)'" onblur="saveEventTitle()" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Nombre del evento">
       </div>
-      <div style="display:flex;gap:5px;flex-shrink:0;">
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+        <select class="filter-select" id="ed-estado-select" onchange="updateEventEstado()" style="font-size:12px;padding:5px 9px;">
+          <option value="consulta">📥 Consulta recibida</option>
+          <option value="en-produccion">⚙️ En producción</option>
+          <option value="confirmado">✅ Confirmado</option>
+          <option value="ejecutado">🎉 Ejecutado</option>
+          <option value="no-confirmado">❌ No confirmado</option>
+        </select>
         <button class="btn btn-outline btn-sm" onclick="openShareModal()">📤 Compartir</button>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 2px;"></span>
         <button class="btn btn-red btn-sm" onclick="deleteCurrentEvent()">🗑</button>
         <button class="btn btn-outline btn-sm" onclick="closeModal('event-detail-modal')">✕</button>
       </div>
@@ -752,13 +775,6 @@
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
       <input type="text" id="ed-empresa" style="color:var(--brand);font-size:13px;background:transparent;border:none;border-bottom:1px dashed transparent;outline:none;font-family:'DM Sans',sans-serif;cursor:text;transition:border-color .2s;" onfocus="this.style.borderBottomColor='var(--brand)'" onblur="autosaveEvent()" placeholder="🏢 Empresa...">
       <input type="date" id="ed-fecha" style="color:var(--text3);font-size:12px;background:transparent;border:none;border-bottom:1px dashed transparent;outline:none;font-family:'DM Sans',sans-serif;cursor:text;transition:border-color .2s;" onfocus="this.style.borderBottomColor='var(--brand)'" onblur="autosaveEvent()">
-      <select class="filter-select" id="ed-estado-select" onchange="updateEventEstado()" style="margin-left:auto;font-size:12px;padding:5px 9px;">
-        <option value="consulta">📥 Consulta recibida</option>
-        <option value="en-produccion">⚙️ En producción</option>
-        <option value="confirmado">✅ Confirmado</option>
-        <option value="ejecutado">🎉 Ejecutado</option>
-        <option value="no-confirmado">❌ No confirmado</option>
-      </select>
     </div>
     <div class="sheet-tabs-bar" id="sheet-tabs-bar"></div>
     <div id="sheet-contents"></div>
@@ -1492,14 +1508,9 @@ async function confirmDeleteEvent(id) {
 const BUILTIN_SHEETS = [
   { id:'general',       label:'📋 General',         type:'general' },
   { id:'checklist',     label:'✅ Checklist',        type:'checklist' },
-  { id:'crono-interno', label:'🗓 Crono. Interno',   type:'crono-interno' },
   { id:'crono-cliente', label:'📤 Crono. Cliente',   type:'crono-cliente' },
   { id:'proveedores',   label:'🤝 Proveedores',      type:'proveedores' },
   { id:'locaciones-ev', label:'📍 Locaciones',       type:'locaciones-ev' },
-  { id:'armado',        label:'🔧 Armado',           type:'armado' },
-  { id:'menu',          label:'🍽 Menú',             type:'menu' },
-  { id:'equipamiento',  label:'🎤 Equip. Técnico',   type:'equipamiento' },
-  { id:'ambientacion',  label:'🌸 Ambientación',     type:'ambientacion' },
   { id:'archivos',      label:'📁 Archivos',         type:'archivos' },
 ];
 
@@ -1565,6 +1576,42 @@ async function saveBlankSheet(idx, val) {
   if (bi >= 0 && ev.sheets && ev.sheets[bi]) { ev.sheets[bi].content = val; await saveEventDB(ev); }
 }
 
+// ─── Campos de texto enriquecido (negrita / subrayado / color) ──
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toRichHtml(raw) {
+  if (!raw) return '';
+  if (!/<[a-z][\s\S]*>/i.test(raw)) return escapeHtml(raw).replace(/\n/g,'<br>'); // texto legacy sin formato
+  return raw;
+}
+const RT_COLORS = ['#0f172a','#dc2626','#0284c7','#16a34a','#7c3aed'];
+function richField(id, raw, placeholder, minHeight, onInput) {
+  return `
+    <div class="rich-toolbar">
+      <button type="button" class="rt-btn" onmousedown="event.preventDefault()" onclick="rtCmd('${id}','bold')" title="Negrita"><b>B</b></button>
+      <button type="button" class="rt-btn" onmousedown="event.preventDefault()" onclick="rtCmd('${id}','underline')" title="Subrayado"><u>U</u></button>
+      <span class="rt-colors">
+        ${RT_COLORS.map(c => `<button type="button" class="rt-color" style="background:${c}" title="Color" onmousedown="event.preventDefault()" onclick="rtCmd('${id}','foreColor','${c}')"></button>`).join('')}
+      </span>
+    </div>
+    <div class="notas-area rich-editable" id="${id}" contenteditable="true"
+      data-placeholder="${(placeholder||'').replace(/"/g,'&quot;')}"
+      style="min-height:${minHeight||100}px;"
+      oninput="${onInput}">${toRichHtml(raw)}</div>`;
+}
+function rtCmd(id, cmd, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.focus();
+  if (cmd === 'foreColor') {
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand(cmd, false, val);
+    document.execCommand('styleWithCSS', false, false);
+  } else {
+    document.execCommand(cmd, false, val || null);
+  }
+  el.dispatchEvent(new Event('input', {bubbles:true}));
+}
+
 function renderSheetContent(sheet, ev, sheetIdx) {
   if (sheet.type === 'general') return `
     <div class="info-grid">
@@ -1603,10 +1650,41 @@ function renderSheetContent(sheet, ev, sheetIdx) {
       <div class="info-field"><label>Fecha inicio</label><input type="date" id="ed-fecha-armado" value="${ev.fecha_armado||''}" onchange="autosaveEvent()"></div>
       <div class="info-field"><label>Fecha fin / desarmado</label><input type="date" id="ed-fecha-desarmado" value="${ev.fecha_desarmado||''}" onchange="autosaveEvent()"></div>
     </div>
-    <div class="section-label">Descripción</div>
-    <textarea class="notas-area" id="ed-desc" placeholder="Descripción y detalles del evento..." oninput="autosaveEvent()">${ev.descripcion||''}</textarea>
-    <div class="section-label">Notas internas</div>
-    <textarea class="notas-area" id="ed-notas" placeholder="Notas generales del equipo..." oninput="autosaveEvent()">${ev.notas||''}</textarea>`;
+    <div class="general-card">
+      <div class="general-card-section">
+        <div class="section-label">Descripción general</div>
+        ${richField('ed-desc', ev.descripcion, 'Descripción y detalles del evento...', 90, 'autosaveEvent()')}
+      </div>
+      <div class="general-card-section">
+        <div class="section-label">Ambientación</div>
+        ${richField('ed-ambientacion', ev.ambientacion, 'Decoración, flores, mesas, sillas, mantelería, colores, temática...', 80, "saveBuiltinFreeSheet('ambientacion',this.innerHTML)")}
+      </div>
+      <div class="general-card-section">
+        <div class="section-label">Armado</div>
+        ${richField('ed-armado', ev.armado, 'Plan de armado: timing, equipos, accesos, montaje...', 80, "saveBuiltinFreeSheet('armado',this.innerHTML)")}
+      </div>
+      <div class="general-card-section">
+        <div class="section-label">Técnica</div>
+        ${richField('ed-equipamiento', ev.equipamiento, 'Sonido, iluminación, pantallas, micrófonos, streaming, generadores...', 80, "saveBuiltinFreeSheet('equipamiento',this.innerHTML)")}
+      </div>
+      <div class="general-card-section">
+        <div class="section-label">Catering</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Menú general</div>
+            ${richField('ed-menu', ev.menu, 'Entrada, principal, postre, bebidas, snacks...', 90, "saveBuiltinFreeSheet('menu',this.innerHTML)")}
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Menú especial <span style="text-transform:none;">(celíaco, vegano, kosher, diabético…)</span></div>
+            ${richField('ed-menu-especial', ev.menu_especial, 'Tipo · Cantidad de comensales...', 90, "saveBuiltinFreeSheet('menu_especial',this.innerHTML)")}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="notas-internas-card">
+      <div class="section-label">Notas internas <span class="private-badge">🔒 No se comparte al cliente</span></div>
+      ${richField('ed-notas', ev.notas, 'Notas generales del equipo...', 110, 'autosaveEvent()')}
+    </div>`;
 
   if (sheet.type === 'checklist') return `
     <div class="section-label">Checklist de tareas</div>
@@ -1617,14 +1695,6 @@ function renderSheetContent(sheet, ev, sheetIdx) {
       <input type="date" class="form-input" id="new-check-fecha" style="max-width:145px;">
       <button class="btn btn-brand btn-sm" onclick="addChecklistItem()">+ Agregar</button>
     </div>`;
-
-  if (sheet.type === 'crono-interno') return `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div class="section-label" style="margin:0;">Cronograma interno</div>
-      <button class="btn btn-outline btn-sm" onclick="downloadCrono('interno')">⬇ Descargar</button>
-    </div>
-    <div id="crono-interno-body">${renderCronoHTML('interno',ev.cronoInterno||[],ev)}</div>
-    <button class="btn btn-outline" style="width:100%;margin-top:10px;border-style:dashed;" onclick="addCronoDay('interno')">+ Agregar día</button>`;
 
   if (sheet.type === 'crono-cliente') return `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -1689,40 +1759,6 @@ function renderSheetContent(sheet, ev, sheetIdx) {
       </div>
     </div>`;
 
-  if (sheet.type === 'armado') return `
-    <div class="section-label">Armado del evento</div>
-    <textarea class="notas-area" style="min-height:300px;font-size:14px;line-height:1.9;"
-      placeholder="Plan de armado: timing, equipos, accesos, montaje..."
-      oninput="saveBuiltinFreeSheet('armado',this.value)">${ev.armado||''}</textarea>`;
-
-  if (sheet.type === 'menu') return `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div>
-        <div class="section-label" style="margin-top:0;">Menú general</div>
-        <textarea class="notas-area" style="min-height:340px;font-size:14px;line-height:1.9;resize:vertical;"
-          placeholder="Entrada, principal, postre, bebidas, snacks..."
-          oninput="saveBuiltinFreeSheet('menu',this.value)">${ev.menu||''}</textarea>
-      </div>
-      <div>
-        <div class="section-label" style="margin-top:0;">Menú especial <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0;">(celíaco, vegano, kosher, diabético…)</span></div>
-        <textarea class="notas-area" style="min-height:340px;font-size:14px;line-height:1.9;resize:vertical;"
-          placeholder="Tipo · Cantidad de comensales&#10;Ej: Vegano · 3 personas&#10;Ej: Celíaco · 5 personas"
-          oninput="saveBuiltinFreeSheet('menu_especial',this.value)">${ev.menu_especial||''}</textarea>
-      </div>
-    </div>`;
-
-  if (sheet.type === 'equipamiento') return `
-    <div class="section-label">Equipamiento técnico</div>
-    <textarea class="notas-area" style="min-height:300px;font-size:14px;line-height:1.9;"
-      placeholder="Sonido, iluminación, pantallas, micrófonos, streaming, generadores..."
-      oninput="saveBuiltinFreeSheet('equipamiento',this.value)">${ev.equipamiento||''}</textarea>`;
-
-  if (sheet.type === 'ambientacion') return `
-    <div class="section-label">Ambientación</div>
-    <textarea class="notas-area" style="min-height:300px;font-size:14px;line-height:1.9;"
-      placeholder="Decoración, flores, mesas, sillas, mantelería, colores, temática..."
-      oninput="saveBuiltinFreeSheet('ambientacion',this.value)">${ev.ambientacion||''}</textarea>`;
-
   if (sheet.type === 'archivos') return `
     <div class="section-label">Archivos adjuntos</div>
     <div class="files-list" id="files-list">${renderFilesHTML(ev)}</div>
@@ -1759,7 +1795,7 @@ function autosaveEvent() {
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(async () => {
     const ev = eventsData.find(e => e.id === currentEventId); if (!ev) return;
-    const g = id => { const el = document.getElementById(id); return el ? el.value : undefined; };
+    const g = id => { const el = document.getElementById(id); if (!el) return undefined; return el.isContentEditable ? el.innerHTML : el.value; };
     if (g('ed-desc') !== undefined) ev.descripcion = g('ed-desc');
     if (g('ed-notas') !== undefined) ev.notas = g('ed-notas');
     if (g('ed-empresa') !== undefined) ev.empresa = g('ed-empresa');
@@ -2400,7 +2436,6 @@ function openShareModal() {
   const sections = [
     { id:'general', label:'📋 General', desc:'Descripción, personas, fechas' },
     { id:'checklist', label:'✅ Checklist', desc:'Lista de tareas' },
-    { id:'crono-interno', label:'🗓 Cronograma Interno', desc:'Para el equipo' },
     { id:'crono-cliente', label:'📤 Cronograma Cliente', desc:'Para enviar al cliente' },
     { id:'proveedores', label:'🤝 Proveedores', desc:'Proveedores contratados' },
     { id:'armado', label:'🔧 Armado', desc:'Plan de armado' },
@@ -2470,9 +2505,6 @@ function generateShareDoc() {
       h+='</tbody></table>';
     });
     return h;
-  }
-  if (sel.includes('crono-interno') && (ev.cronoInterno||[]).length) {
-    html += '<h2>🗓 Cronograma Interno</h2>' + buildCronoHtmlForShare(ev.cronoInterno, true);
   }
   if (sel.includes('crono-cliente') && (ev.cronoCliente||[]).length) {
     html += '<h2>📤 Cronograma</h2>' + buildCronoHtmlForShare(ev.cronoCliente, false);
