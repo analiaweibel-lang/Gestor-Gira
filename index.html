@@ -40,10 +40,10 @@
   .logo-name { font-family:'DM Serif Display',serif; font-size:20px; color:var(--brand); letter-spacing:.5px; }
   .logo-sub { color:var(--text2); font-size:12px; margin-left:6px; font-weight:300; }
 
-  nav { display:flex; gap:6px; }
-  nav button { background:none; border:1px solid transparent; color:var(--text3); padding:7px 14px; border-radius:var(--radius-sm); cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; transition:all .18s; letter-spacing:0.01em; }
+  nav { display:flex; gap:2px; }
+  nav button { background:none; border:none; color:var(--text3); padding:9px 16px; border-radius:10px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13.5px; font-weight:500; transition:all .18s; letter-spacing:0.01em; }
   nav button:hover { color:var(--text); background:var(--surface2); }
-  nav button.active { color:var(--brand); border-color:var(--brand); background:var(--brand-dim); font-weight:600; }
+  nav button.active { color:var(--brand); background:var(--brand-dim); font-weight:600; }
 
   /* SYNC BADGE */
   .sync-badge { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text3); padding:5px 12px; background:var(--surface2); border-radius:20px; border:1px solid var(--border); font-weight:500; }
@@ -440,12 +440,12 @@
     <span class="logo-sub">Sistema de Gestión</span>
   </div>
   <nav>
-    <button class="active" onclick="showSection(event,'crm')">👥 Clientes</button>
-    <button onclick="showSection(event,'eventos')">🎭 Organización de Eventos</button>
-    <button onclick="showSection(event,'tareas')">✅ Tareas</button>
-    <button onclick="showSection(event,'proveedores-global')">🤝 Proveedores</button>
-    <button onclick="showSection(event,'locaciones-global')">📍 Locaciones</button>
-    <button onclick="showSection(event,'calendario')">📅 Calendario</button>
+    <button onclick="showSection(event,'crm')">Clientes</button>
+    <button class="active" onclick="showSection(event,'eventos')">Organización de Eventos</button>
+    <button onclick="showSection(event,'tareas')">Tareas</button>
+    <button onclick="showSection(event,'proveedores-global')">Proveedores</button>
+    <button onclick="showSection(event,'locaciones-global')">Locaciones</button>
+    <button onclick="showSection(event,'calendario')">Calendario</button>
   </nav>
   <div class="sync-badge">
     <div class="sync-dot" id="sync-dot"></div>
@@ -455,7 +455,7 @@
 
 <main>
   <!-- CRM -->
-  <section id="crm" class="section active">
+  <section id="crm" class="section">
     <div class="page-title">Clientes</div>
     <div class="page-sub">Base de datos compartida · filtrar, buscar y contactar</div>
     <div class="stats-row">
@@ -510,7 +510,7 @@
   </section>
 
   <!-- EVENTOS -->
-  <section id="eventos" class="section">
+  <section id="eventos" class="section active">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
       <div>
         <div class="page-title">Organización de Eventos</div>
@@ -3197,6 +3197,9 @@ async function saveLocacion() {
 async function init() {
   await loadCRM();
   updateDatalist();
+  await loadEvents();
+  renderKanban();
+  startAutoRefresh();
 }
 
 init();
