@@ -1846,18 +1846,20 @@ async function removeCheck(i) {
 
 // ─── Helpers de tiempo ──────────────────────────────────────
 function phora(raw) {
-  // "2000" | "20.00" | "20,00" | "20:00" | "20h00" → "20:00"
+  // "2000" | "20.00" | "20,00" | "20:00" | "8:00" | "800" | "20h00" → "HH:MM" (siempre 2+2 dígitos)
   if (!raw) return '';
   const s = String(raw).replace(/\s/g,'').replace(/hs?\.?$/i,'');
   const clean = s.replace(/[h.,]/g,':');
+  // Formato explícito H:MM / HH:MM (incluye minuto de un solo dígito) — priorizado sobre el bloque de dígitos
+  const m = clean.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (m) return m[1].padStart(2,'0') + ':' + m[2].padStart(2,'0');
   const digits = clean.replace(/:/g,'');
   if (/^\d+$/.test(digits)) {
     if (digits.length <= 2) return digits.padStart(2,'0') + ':00';
-    if (digits.length === 3) return digits[0] + ':' + digits.slice(1).padStart(2,'0');
+    if (digits.length === 3) return digits[0].padStart(2,'0') + ':' + digits.slice(1).padStart(2,'0');
     return digits.slice(0,2) + ':' + digits.slice(2,4);
   }
-  const m = clean.match(/^(\d{1,2}):(\d{2})/);
-  return m ? m[1].padStart(2,'0') + ':' + m[2] : raw;
+  return raw;
 }
 function h2m(h) {
   const m = phora(h).match(/^(\d{2}):(\d{2})/);
@@ -1956,7 +1958,7 @@ function renderCronoHTML(type, items, ev) {
     // Table
     html += `<table class="crono-table"><thead><tr>
       <th style="width:78px;">Horario</th>
-      <th style="width:82px;">Duración</th>
+      <th style="width:96px;">Duración</th>
       <th>Actividad</th>
       ${notesCol ? '<th style="width:140px;">Notas</th>' : ''}
       <th style="width:28px;"></th>
@@ -1964,18 +1966,24 @@ function renderCronoHTML(type, items, ev) {
 
     dayItems.forEach(({ r, i }) => {
       const isFirst = i === dayItems[0].i;
+      const rowHint = addTime(r.hora, r.duracion);
       html += `<tr data-idx="${i}">
         <td><input class="crono-cell-edit ${isFirst?'':'crono-calc'}"
+          id="${type}-hora-${i}"
           value="${(r.hora||'').replace(/"/g,'&quot;')}"
           placeholder="20:00"
-          ${isFirst ? `onblur="cnEditHora('${type}',${i},this.value)"` : 'readonly title="Calculado automáticamente"'}
+          ${isFirst ? `onblur="cnEditHora('${type}',${i},this.value)" oninput="cnRowHintUpdate('${type}',${i})"` : 'readonly title="Calculado automáticamente"'}
           onkeydown="if(event.key==='Enter')this.blur()"
           style="${isFirst ? '' : 'color:var(--text3);cursor:default;background:transparent;'}"></td>
-        <td><input class="crono-cell-edit"
-          value="${(r.duracion||'').replace(/"/g,'&quot;')}"
-          placeholder="40 min"
-          onblur="cnEditDur('${type}',${i},this.value)"
-          onkeydown="if(event.key==='Enter')this.blur()"></td>
+        <td><div style="display:flex;flex-direction:column;gap:1px;">
+          <input class="crono-cell-edit" id="${type}-dur-${i}"
+            value="${(r.duracion||'').replace(/"/g,'&quot;')}"
+            placeholder="40 min"
+            onblur="cnEditDur('${type}',${i},this.value)"
+            oninput="cnRowHintUpdate('${type}',${i})"
+            onkeydown="if(event.key==='Enter')this.blur()">
+          <span id="${type}-hint-${i}" class="crono-hint" style="padding:0;min-width:0;">${rowHint ? '→ '+rowHint : ''}</span>
+        </div></td>
         <td><input class="crono-cell-edit"
           value="${(r.asunto||'').replace(/"/g,'&quot;')}"
           placeholder="Actividad..."
@@ -2031,6 +2039,16 @@ function cnHint(p) {
   const hEl   = document.getElementById(p+'-h');
   const dEl   = document.getElementById(p+'-d');
   const hint  = document.getElementById(p+'-hint');
+  if (!hEl || !dEl || !hint) return;
+  const sig = addTime(phora(hEl.value)||hEl.value, dEl.value);
+  hint.textContent = sig ? '→ ' + sig : '';
+}
+
+// ─── Hint en tiempo real para filas ya guardadas ────────────
+function cnRowHintUpdate(type, i) {
+  const hEl   = document.getElementById(`${type}-hora-${i}`);
+  const dEl   = document.getElementById(`${type}-dur-${i}`);
+  const hint  = document.getElementById(`${type}-hint-${i}`);
   if (!hEl || !dEl || !hint) return;
   const sig = addTime(phora(hEl.value)||hEl.value, dEl.value);
   hint.textContent = sig ? '→ ' + sig : '';
