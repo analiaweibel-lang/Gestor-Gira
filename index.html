@@ -1929,7 +1929,9 @@ function addTime(hora, durRaw) {
 // ─── Cascada: recalcula horarios desde índice dado ──────────
 // items dentro de un mismo día se guardan en orden de inserción
 // el hora del item[0] es fijo (lo puso el usuario)
-// los siguientes = hora[i-1] + dur[i-1]
+// los siguientes = hora[i-1] + dur[i-1], salvo que el ítem tenga
+// horaManual=true (el usuario lo fijó a mano) — ese pasa a ser el
+// nuevo punto de partida de la cascada para lo que sigue.
 function recalcCrono(arr) {
   // Group by dia, recalc within each group maintaining original order
   const groups = {};
@@ -1942,6 +1944,7 @@ function recalcCrono(arr) {
     for (let j = 1; j < items.length; j++) {
       const prev = items[j-1].r;
       const cur  = items[j].r;
+      if (cur.horaManual) continue; // hora fijada a mano, no se pisa
       if (prev.hora && prev.duracion) {
         const calc = addTime(prev.hora, prev.duracion);
         if (calc) cur.hora = calc;
@@ -2001,16 +2004,18 @@ function renderCronoHTML(type, items, ev) {
     </tr></thead><tbody>`;
 
     dayItems.forEach(({ r, i }) => {
-      const isFirst = i === dayItems[0].i;
+      const isFirst  = i === dayItems[0].i;
+      const isAnchor = isFirst || !!r.horaManual;
       const rowHint = addTime(r.hora, r.duracion);
       html += `<tr data-idx="${i}">
-        <td><input class="crono-cell-edit ${isFirst?'':'crono-calc'}"
+        <td><input class="crono-cell-edit ${isAnchor?'':'crono-calc'}"
           id="${type}-hora-${i}"
           value="${(r.hora||'').replace(/"/g,'&quot;')}"
           placeholder="20:00"
-          ${isFirst ? `onblur="cnEditHora('${type}',${i},this.value)" oninput="cnRowHintUpdate('${type}',${i})"` : 'readonly title="Calculado automáticamente"'}
+          onblur="cnEditHora('${type}',${i},this.value)" oninput="cnRowHintUpdate('${type}',${i})"
+          title="${isFirst ? '' : (isAnchor ? 'Editado a mano — borralo para que vuelva a calcularse solo' : 'Calculado automáticamente — escribí para fijarlo a mano')}"
           onkeydown="if(event.key==='Enter')this.blur()"
-          style="${isFirst ? '' : 'color:var(--text3);cursor:default;background:transparent;'}"></td>
+          style="${isAnchor ? '' : 'color:var(--text3);'}"></td>
         <td><div style="display:flex;flex-direction:column;gap:1px;">
           <input class="crono-cell-edit" id="${type}-dur-${i}"
             value="${(r.duracion||'').replace(/"/g,'&quot;')}"
@@ -2143,7 +2148,11 @@ function cnEditHora(type, i, val) {
   const ev  = eventsData.find(e => String(e.id) === String(currentEventId));
   const key = type === 'interno' ? 'cronoInterno' : 'cronoCliente';
   if (!ev || !ev[key] || !ev[key][i]) return;
-  ev[key][i].hora = phora(val) || val;
+  const item = ev[key][i];
+  const nuevaHora = phora(val) || val;
+  item.hora = nuevaHora;
+  // Se guarda vacío → vuelve a calcularse solo. Con valor → queda fijado a mano.
+  item.horaManual = !!nuevaHora;
   recalcCrono(ev[key]);
   renderCronoTable(type, ev[key], ev);
   saveEventDB(ev);
